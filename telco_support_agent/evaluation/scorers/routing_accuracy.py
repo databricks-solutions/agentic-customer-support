@@ -2,7 +2,8 @@
 
 from typing import Any, Optional
 
-from databricks.agents.evals import metric
+from mlflow.genai.scorers import scorer
+
 
 from telco_support_agent.evaluation.scorers.base_scorer import GuidelinesScorer
 
@@ -17,7 +18,7 @@ class RoutingAccuracyScorer(GuidelinesScorer):
     ]
 
     def __init__(self):
-        super().__init__("routing_accuracy", self.guidelines)
+        super().__init__("routing_accuracy", 1.0, self.guidelines)
 
     def get_context(
         self,
@@ -39,20 +40,20 @@ class RoutingAccuracyScorer(GuidelinesScorer):
         }
         return context
 
-    def get_custom_metric(self):
+    def get_online_scorer(self):
         """Implementation of custom metric for offline evaluation."""
 
-        @metric
+        @scorer
         def routing_accuracy(
-            request: dict[str, Any], response: Optional[dict[str, Any]]
+            inputs, outputs
         ):
             from mlflow.genai.judges import meets_guidelines
 
-            query = str(request["request"]["input"][0]["content"])
+            query = str(inputs["request"]["input"][0]["content"])
 
             context = {
                 "query": query,
-                "routed_agent": response["custom_outputs"]["routing"]["agent_type"],
+                "routed_agent": outputs["custom_outputs"]["routing"]["agent_type"],
             }
             guidelines = [
                 "If the query is about account management, profile updates, personal information, or login issues, it should be routed to the 'account' agent",

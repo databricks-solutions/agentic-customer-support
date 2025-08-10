@@ -7,25 +7,26 @@ from mlflow.genai.scorers import scorer
 
 
 class BaseScorer(ABC):
-    def __init__(self, name):
+    def __init__(self, name, sample_rate):
         self.name = name
+        self.sample_rate = sample_rate
 
     @abstractmethod
-    def get_scorer(self):
+    def get_offline_scorer(self):
         """Implementation of custom scorer for online evaluation."""
         pass
 
     @abstractmethod
-    def get_custom_metric(self):
+    def get_online_scorer(self):
         """Implementation of custom metric for offline evaluation."""
         pass
 
 
 class PromptScorer(BaseScorer):
     def __init__(
-        self, name, prompt_template: str, numeric_values: dict[str, int | float]
+        self, name, sample_rate, prompt_template: str, numeric_values: dict[str, int | float]
     ):
-        super().__init__(name)
+        super().__init__(name, sample_rate)
         self.prompt_template = prompt_template
         self.numeric_values = numeric_values
 
@@ -41,6 +42,7 @@ class PromptScorer(BaseScorer):
         try:
             request = str(inputs["input"])
             response = str(outputs["output"][-1])
+
             assert self.prompt_template is not None, (
                 "Getting feedback from prompt requires a prompt template definition."
             )
@@ -56,7 +58,7 @@ class PromptScorer(BaseScorer):
                 value="no", rationale=f"Error evaluating {self.name}: {str(e)}"
             )
 
-    def get_scorer(self):
+    def get_offline_scorer(self):
         """Implementation of custom scorer for online evaluation."""
 
         @scorer(name=self.name)
@@ -65,14 +67,14 @@ class PromptScorer(BaseScorer):
 
         return internal_scorer
 
-    def get_custom_metric(self):
+    def get_online_scorer(self):
         """Implementation of custom metric for offline evaluation."""
         pass
 
 
 class GuidelinesScorer(BaseScorer):
-    def __init__(self, name, guidelines: list[str]):
-        super().__init__(name)
+    def __init__(self, name, sample_rate, guidelines: list[str]):
+        super().__init__(name, sample_rate)
         self.guidelines = guidelines
 
     def get_context(
@@ -112,7 +114,7 @@ class GuidelinesScorer(BaseScorer):
                 value="no", rationale=f"Error evaluating {self.name}: {str(e)}"
             )
 
-    def get_scorer(self):
+    def get_offline_scorer(self):
         """Implementation of custom scorer for online evaluation."""
 
         @scorer(name=self.name)
@@ -126,6 +128,6 @@ class GuidelinesScorer(BaseScorer):
 
         return internal_scorer
 
-    def get_custom_metric(self):
+    def get_online_scorer(self):
         """Implementation of custom scorer for online evaluation."""
         pass

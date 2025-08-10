@@ -1,6 +1,6 @@
 """Brand compliance evaluation scorers for telco support agent."""
 
-from databricks.agents.evals import metric
+from mlflow.genai.scorers import scorer
 
 from telco_support_agent.evaluation.scorers.base_scorer import GuidelinesScorer
 
@@ -16,16 +16,20 @@ class BrandComplianceScorer(GuidelinesScorer):
     ]
 
     def __init__(self):
-        super().__init__("brand_compliance", self.guidelines)
+        super().__init__("brand_compliance", 1.0, self.guidelines)
 
-    def get_custom_metric(self):
+    def get_online_scorer(self):
         """Implementation of custom metric for offline evaluation."""
 
-        @metric
-        def brand_compliance(request: str, response: str):
+        @scorer
+        def brand_compliance(inputs, outputs):
             from mlflow.genai.judges import meets_guidelines
 
+            request = str(inputs["request"]["input"])
+            response = str(outputs["output"][-1])
+
             context = {"request": request, "response": response}
+
             feedback = meets_guidelines(
                 guidelines=[
                     "The response must maintain a professional yet friendly tone appropriate for telecommunications customer service.",

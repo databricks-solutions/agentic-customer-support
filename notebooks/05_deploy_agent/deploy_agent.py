@@ -54,9 +54,6 @@ print("Config loaded successfully!")
 # COMMAND ----------
 
 experiment = mlflow.set_experiment(f"/Shared/telco_support_agent/{config.env}/{config.env}_telco_support_agent")
-os.environ['MLFLOW_EXPERIMENT_ID'] = experiment.experiment_id
-print(experiment.experiment_id)
-
 # COMMAND ----------
 
 print("Deployment configuration:")
@@ -191,7 +188,7 @@ print("="*50)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Create External Monitor
+# MAGIC ## Create Agent Monitor
 # MAGIC
 # MAGIC Set up agent monitoring for the deployed agent
 
@@ -199,7 +196,8 @@ print("="*50)
 
 from telco_support_agent.evaluation import SCORERS
 from telco_support_agent.ops.monitoring import (AgentMonitoringError,
-                                                create_agent_monitor)
+                                                setup_agent_scorers)
+from mlflow.genai.scorers import Safety
 
 if config.monitoring_enabled:
     print("="*50)
@@ -209,32 +207,33 @@ if config.monitoring_enabled:
     print(f"Experiment ID: {experiment.experiment_id}")
     print(f"Agent catalog: {config.uc_catalog}")
     print(f"Agent schema: {config.agent_schema}")
+    # Adding built-in scorers.
+    builtin_scores = [(Safety(), "safety", 0.8)]
     # display custom metrics
     print("Custom Telco Assessments:")
-    scorers = SCORERS[:4]
-    for scorer in scorers:
-        print(f"  - {scorer.name}")
+    for scorer in SCORERS:
+        print(f"  - Name: {scorer.name} Sample Rate: {scorer.sample_rate}")
     print()
+    print("Built-in Assessments:")
+    for scorer in builtin_scores:
+        print(f" - Name: {scorer[0].name} Custom Name: {scorer[1]} Sample Rate: {scorer[2]}")
+
 
     try:
         # create external monitor with custom metrics
         uc_config = config.to_uc_config()
-        monitor = create_agent_monitor(
-            uc_config=uc_config,
+        scorers_out = setup_agent_scorers(
             experiment_id=experiment.experiment_id,
             replace_existing=config.monitoring_replace_existing,
-            custom_metrics=[scorer.get_custom_metric() for scorer in scorers],
+            builtin_scorers=builtin_scores,
+            custom_scorers=SCORERS,
         )
 
-        print("✅ External monitor created successfully!")
-        print(f"Monitor ID: {getattr(monitor, 'id', 'N/A')}")
-        print(f"Experiment ID: {getattr(monitor, 'experiment_id', 'N/A')}")
-        print(f"Evaluated traces table: {getattr(monitor, 'evaluated_traces_table', 'N/A')}")
+        print("✅ Monitor created successfully!")
+        print(f"Experiment ID: {experiment.experiment_id}")
+        print(f"Monitor scorers: {scorers_out}")
+        print(f"\nNote: Monitor created with {len(SCORERS) + len(builtin_scores)} scorers assessments.")
 
-        if hasattr(monitor, 'monitoring_page_url'):
-            print(f"Monitoring page: {monitor.monitoring_page_url}")
-
-        print(f"\nNote: Monitor created with {len(scorers)} custom scorer assessments.")
 
     except AgentMonitoringError as e:
         print(f"❌ Failed to create monitor: {str(e)}")

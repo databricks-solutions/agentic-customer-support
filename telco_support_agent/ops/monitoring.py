@@ -2,17 +2,10 @@
 
 from typing import Optional
 
-from databricks.agents.monitoring import (
-    AssessmentsSuiteConfig,
-    CustomMetric,
-    create_external_monitor,
-    delete_external_monitor,
-    get_external_monitor,
-)
+from mlflow.genai.scorers import delete_scorer, list_scorers, ScorerSamplingConfig
 
-from telco_support_agent.config import UCConfig
 from telco_support_agent.utils.logging_utils import get_logger
-
+from telco_support_agent.evaluation.scorers.base_scorer import BaseScorer
 logger = get_logger(__name__)
 
 
@@ -22,98 +15,77 @@ class AgentMonitoringError(Exception):
     pass
 
 
-def create_agent_monitor(
-    uc_config: UCConfig,
+def setup_agent_scorers(
     experiment_id: str,
     replace_existing: bool = True,
-    sample: float = None,
-    custom_metrics: Optional[list] = None,
+    builtin_scorers: Optional[list] = None,
+    custom_scorers: Optional[list[BaseScorer]] = None,
 ) -> any:
-    """Create an external monitor for the deployed agent with custom metrics.
+    """Set up a set of scorers for the deployed agent with custom scorers.
 
     Args:
-        uc_config: Unity Catalog configuration
-        experiment_id: MLflow experiment id.
-        replace_existing: Whether to replace the existing monitor
-        sample: Sampling rate for traces (0.0 < rate <= 1.0)
-        custom_metrics: List of custom metric functions to use
+        experiment_id: MLflow experiment ID.
+        replace_existing: Whether to replace the existing monitor.
+        builtin_scorers: List of built-in scorers to use.
+        custom_scorers: List of custom scorer functions to use
 
     Returns:
-        Created external monitor
+        Created custom scorers.
 
     Raises:
-        AgentMonitoringError: If monitor creation fails
+        AgentMonitoringError: If the scorer's creation fails
     """
     try:
         if replace_existing:
             try:
-                get_external_monitor(experiment_id=experiment_id)
-                logger.info(f"Found existing monitor for endpoint: {experiment_id}")
-                logger.info("Deleting existing monitor for replacement...")
-                delete_external_monitor(experiment_id=experiment_id)
+                actual_scorers = list_scorers(experiment_id=experiment_id)
+                logger.info(f"Found existing scorers: {actual_scorers} for experiment: {experiment_id}")
+                logger.info("Deleting existing scorers for replacement...")
+                for scorer in actual_scorers:
+                    delete_scorer(name=scorer.name)
             except ValueError:
-                logger.info(f"No existing monitor found for endpoint: {experiment_id}")
+                logger.info(f"No existing scorers found for experiment: {experiment_id}")
 
-        # create monitor with empty assessments
-        logger.info(f"Creating external monitor for experiment: {experiment_id}")
-        logger.info(f"Using agent catalog: {uc_config.agent_catalog}")
-        logger.info(f"Using agent schema: {uc_config.agent_schema}")
+        logger.info(f"Creating scorers for experiment: {experiment_id}")
 
-        assessments = []
+        scorers_result = []
 
-        if custom_metrics:
-            logger.info("Adding custom telco metrics to monitoring")
-            for metric_func in custom_metrics:
-                metric_name = getattr(metric_func, "__name__", "unknown_metric")
-                logger.info(f"Adding custom metric: {metric_name}")
-                assessments.append(CustomMetric(metric_func))
+        all_scores = builtin_scorers + custom_scorers
 
-        logger.info(
-            f"Monitor configured with {len(assessments)} custom telco assessments"
-        )
-
-        assessments_config = AssessmentsSuiteConfig(
-            sample=sample,
-            paused=False,
-            assessments=assessments,
-        )
-
-        monitor = create_external_monitor(
-            catalog_name=uc_config.agent_catalog,
-            schema_name=uc_config.agent_schema,
-            assessments_config=assessments_config,
-            experiment_id=experiment_id,
-        )
+        if all_scores:
+            scorers_mapping = {scorer.name: scorer for scorer in list_scorers(experiment_id=experiment_id)}
+            logger.info("Adding custom and built-in scorers to monitoring")
+            for scorer in all_scores:
+                created_scorer = create_scorer(scorer=scorer, scorers_mapping=scorers_mapping)
+                scorers_result.append(created_scorer)
 
         logger.info(
-            "Successfully created external monitor with custom telco assessments."
+            f"Monitor configured with {len(all_scores)} scorers."
         )
-        logger.info(
-            f"Monitor will create tables in: {uc_config.agent_catalog}.{uc_config.agent_schema}"
-        )
-        return monitor
+
+        return scorers_result
 
     except Exception as e:
         error_msg = f"Failed to create agent monitor: {str(e)}"
         logger.error(error_msg)
         raise AgentMonitoringError(error_msg) from e
 
+def create_scorer(scorer, scorers_mapping):
 
-def delete_agent_monitor(experiment_name: str) -> None:
-    """Delete external monitor for an experiment.
+    if isinstance(scorer, BaseScorer):
+        scorer_fn = scorer.get_online_scorer()
+        sample_rate = scorer.sample_rate
+        scorer_name = scorer.name
+    else:
+        scorer_fn = scorer[0]
+        scorer_name = scorer[1]
+        sample_rate = scorer[2]
 
-    Args:
-        experiment_name: MLflow experiment name
-
-    Raises:
-        AgentMonitoringError: If monitor deletion fails
-    """
-    try:
-        logger.info(f"Deleting external monitor for experiment: {experiment_name}")
-        delete_external_monitor(experiment_name=experiment_name)
-        logger.info("Successfully deleted external monitor")
-
-    except Exception as e:
-        error_msg = f"Failed to delete agent monitor: {str(e)}"
-        logger.error(error_msg)
-        raise AgentMonitoringError(error_msg) from e
+    if scorer_name in scorers_mapping:
+        # Scorer already exists. Remove and create a scorer.
+        # Doing this in case the scorer code changed.
+        delete_scorer(name=scorer_name)
+    created_scorer = scorer_fn.register(name=scorer_name)
+    created_scorer.start(sampling_config=ScorerSamplingConfig(sample_rate=sample_rate))
+    logger.info(f"Adding scorer: {scorer_name} to experiment with sample rate: {sample_rate}.")
+    return created_scorer
