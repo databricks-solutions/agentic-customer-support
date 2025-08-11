@@ -4,7 +4,6 @@ from typing import Any, Optional
 
 from mlflow.genai.scorers import scorer
 
-
 from telco_support_agent.evaluation.scorers.base_scorer import GuidelinesScorer
 
 
@@ -44,9 +43,7 @@ class RoutingAccuracyScorer(GuidelinesScorer):
         """Implementation of custom metric for offline evaluation."""
 
         @scorer
-        def routing_accuracy(
-            inputs, outputs
-        ):
+        def routing_accuracy(inputs, outputs):
             from mlflow.genai.judges import meets_guidelines
 
             query = str(inputs["request"]["input"][0]["content"])

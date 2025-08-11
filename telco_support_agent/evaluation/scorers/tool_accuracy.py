@@ -2,9 +2,8 @@
 
 from typing import Any, Optional
 
-from mlflow.genai.scorers import scorer
-
 from mlflow.entities import Trace
+from mlflow.genai.scorers import scorer
 
 from telco_support_agent.evaluation.scorers.base_scorer import GuidelinesScorer
 
@@ -44,7 +43,16 @@ class ToolAccuracyScorer(GuidelinesScorer):
                 tool_name = span.inputs["tool_name"].split("__")[-1]
                 tool_args = span.inputs["args"]
                 tool_calls.append((tool_name, tool_args))
-        tools_used = "\n".join([f"{i + 1}. Tool Name: {tool_name} Arguments: {tool_args}" for i, (tool_name, tool_args) in enumerate(tool_calls)]) if tool_calls else ""
+        tools_used = (
+            "\n".join(
+                [
+                    f"{i + 1}. Tool Name: {tool_name} Arguments: {tool_args}"
+                    for i, (tool_name, tool_args) in enumerate(tool_calls)
+                ]
+            )
+            if tool_calls
+            else ""
+        )
         request = str(inputs["input"])
         response = str(outputs["output"][-1])
         return {"tools_used": tools_used, "request": request, "response": response}
@@ -59,6 +67,7 @@ class ToolAccuracyScorer(GuidelinesScorer):
             trace,
         ):
             from mlflow.genai.judges import meets_guidelines
+
             spans = trace.data.spans
             tool_calls = []
             for span in spans:
@@ -66,7 +75,16 @@ class ToolAccuracyScorer(GuidelinesScorer):
                     tool_name = span.inputs["tool_name"].split("__")[-1]
                     tool_args = span.inputs["args"]
                     tool_calls.append((tool_name, tool_args))
-            tools_used = "\n".join([f"{i + 1}. Tool Name: {tool_name} Arguments: {tool_args}" for i, (tool_name, tool_args) in enumerate(tool_calls)]) if tool_calls else ""
+            tools_used = (
+                "\n".join(
+                    [
+                        f"{i + 1}. Tool Name: {tool_name} Arguments: {tool_args}"
+                        for i, (tool_name, tool_args) in enumerate(tool_calls)
+                    ]
+                )
+                if tool_calls
+                else ""
+            )
 
             request = str(inputs["request"]["input"])
             response = str(outputs["output"][-1])
