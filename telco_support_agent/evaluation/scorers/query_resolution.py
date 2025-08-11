@@ -2,7 +2,6 @@
 
 from mlflow.genai.scorers import scorer
 
-
 from telco_support_agent.evaluation.scorers.base_scorer import GuidelinesScorer
 
 
