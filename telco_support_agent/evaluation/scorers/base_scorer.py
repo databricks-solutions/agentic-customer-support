@@ -4,6 +4,7 @@ from typing import Any, Optional
 from mlflow.entities import Feedback, Trace
 from mlflow.genai.judges import custom_prompt_judge, meets_guidelines
 from mlflow.genai.scorers import scorer
+from mlflow.genai.scorers.builtin_scorers import BuiltInScorer
 
 
 class BaseScorer(ABC):
@@ -22,9 +23,20 @@ class BaseScorer(ABC):
         pass
 
 
+class BuiltInScorerWrapper:
+    def __init__(self, name: str, sample_rate: float, scorer: BuiltInScorer):
+        self.name = name
+        self.sample_rate = sample_rate
+        self.scorer = scorer
+
+
 class PromptScorer(BaseScorer):
     def __init__(
-        self, name, sample_rate, prompt_template: str, numeric_values: dict[str, int | float]
+        self,
+        name,
+        sample_rate,
+        prompt_template: str,
+        numeric_values: dict[str, int | float],
     ):
         super().__init__(name, sample_rate)
         self.prompt_template = prompt_template

@@ -106,12 +106,12 @@ try:
     for i, test_input in enumerate(test_queries, 1):
         print(f"Test {i}: {test_input['input'][0]['content']}")
         response = loaded_model.predict(test_input)
-        
+
         if response and "output" in response and len(response["output"]) > 0:
             print(f"✅ Test {i} passed")
         else:
             raise ValueError(f"Test {i} failed: Model returned empty or invalid response")
-    
+
     print("✅ All model predictions successful")
     print("Proceeding with deployment...")
 
@@ -194,7 +194,7 @@ print("="*50)
 
 # COMMAND ----------
 
-from telco_support_agent.evaluation import SCORERS
+from telco_support_agent.evaluation import SCORERS, BuiltInScorerWrapper
 from telco_support_agent.ops.monitoring import (AgentMonitoringError,
                                                 setup_agent_scorers)
 from mlflow.genai.scorers import Safety
@@ -208,15 +208,15 @@ if config.monitoring_enabled:
     print(f"Agent catalog: {config.uc_catalog}")
     print(f"Agent schema: {config.agent_schema}")
     # Adding built-in scorers.
-    builtin_scores = [(Safety(), "safety", 0.8)]
+    builtin_scores = [BuiltInScorerWrapper("safety", 0.8, Safety())]
     # display custom metrics
     print("Custom Telco Assessments:")
     for scorer in SCORERS:
         print(f"  - Name: {scorer.name} Sample Rate: {scorer.sample_rate}")
     print()
     print("Built-in Assessments:")
-    for scorer in builtin_scores:
-        print(f" - Name: {scorer[0].name} Custom Name: {scorer[1]} Sample Rate: {scorer[2]}")
+    for builtin_scorer in builtin_scores:
+        print(f" - Name: {builtin_scorer.scorer.name} Custom Name: {builtin_scorer.name} Sample Rate: {builtin_scorer.sample_rate}")
 
 
     try:
