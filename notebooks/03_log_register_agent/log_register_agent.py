@@ -120,6 +120,54 @@ print("Test query completed successfully")
 # COMMAND ----------
 
 # MAGIC %md
+# MAGIC ## Test Intelligence Control
+
+# COMMAND ----------
+
+print("Testing intelligence control...")
+
+# Test 1: Intelligence enabled (normal behavior)
+test_request_intelligent = ResponsesAgentRequest(
+    input=[{"role": "user", "content": "how much data did the customer use in May?"}],
+    custom_inputs={"customer": "CUS-10001", "intelligence_enabled": True}
+)
+
+response_intelligent = supervisor.predict(test_request_intelligent)
+print("✅ Intelligence enabled test completed")
+
+# Test 2: Intelligence disabled (generic response)
+test_request_generic = ResponsesAgentRequest(
+    input=[{"role": "user", "content": "how much data did the customer use in May?"}],
+    custom_inputs={"customer": "CUS-10001", "intelligence_enabled": False}
+)
+
+response_generic = supervisor.predict(test_request_generic)
+print("✅ Intelligence disabled test completed")
+
+# Show response previews
+intelligent_text = ""
+generic_text = ""
+
+for output_item in response_intelligent.output:
+    if hasattr(output_item, "content"):
+        for content_item in output_item.content:
+            if hasattr(content_item, "text"):
+                intelligent_text = content_item.text
+                break
+
+for output_item in response_generic.output:
+    if hasattr(output_item, "content"):
+        for content_item in output_item.content:
+            if hasattr(content_item, "text"):
+                generic_text = content_item.text
+                break
+
+print(f"Intelligence enabled response: {intelligent_text[:200]}...")
+print(f"Intelligence disabled response: {generic_text[:200]}...")
+
+# COMMAND ----------
+
+# MAGIC %md
 # MAGIC ## Log Agent to MLflow
 
 # COMMAND ----------

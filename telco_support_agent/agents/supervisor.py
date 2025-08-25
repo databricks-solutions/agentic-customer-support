@@ -258,6 +258,136 @@ class SupervisorAgent(BaseAgent):
             error_response=None,
         )
 
+    def _handle_direct_response(
+        self, request: ResponsesAgentRequest
+    ) -> ResponsesAgentResponse:
+        """Handle request directly without routing when intelligence is disabled.
+
+        Args:
+            request: The request containing user messages
+
+        Returns:
+            Direct response from supervisor as a conversational agent
+        """
+        logger.debug("Handling request directly without sub-agent routing")
+
+        # Extract user query
+        user_query = extract_user_query(request.input)
+        if not user_query:
+            error_response = {
+                "role": "assistant",
+                "type": "message",
+                "content": [
+                    {
+                        "type": "output_text",
+                        "text": "I'm sorry, I didn't receive a clear question. Could you please rephrase your request?",
+                    }
+                ],
+                "id": str(uuid4()),
+            }
+            return ResponsesAgentResponse(
+                output=[error_response],
+                custom_outputs=request.custom_inputs.copy()
+                if request.custom_inputs
+                else {},
+            )
+
+        # Use the supervisor's LLM to generate a direct response
+        # Convert MLflow Message objects to dictionaries
+        messages = [i.model_dump() for i in request.input]
+
+        # Add a system message to make it conversational but limited
+        system_message = {
+            "role": "system",
+            "content": "You are a helpful customer service representative. You can provide general information and assistance, but you cannot access specific customer data or perform account operations. If a customer asks for specific account information, politely explain that you'll need them to contact customer service for detailed account access.",
+        }
+
+        # Insert system message at the beginning
+        messages_with_system = [system_message] + messages
+
+        try:
+            # Call LLM directly without tools (intelligence disabled)
+            # Follow the same pattern as route_query - don't pass request to avoid databricks_options processing
+            llm_response = self.call_llm(messages_with_system)
+
+            response_content = llm_response.get(
+                "content",
+                "I apologize, but I'm unable to provide a response at the moment. Please try again.",
+            )
+
+            response_message = {
+                "role": "assistant",
+                "type": "message",
+                "content": [
+                    {
+                        "type": "output_text",
+                        "text": response_content,
+                    }
+                ],
+                "id": str(uuid4()),
+            }
+
+            # Prepare custom outputs without routing info since no routing occurred
+            custom_outputs = (
+                request.custom_inputs.copy() if request.custom_inputs else {}
+            )
+            custom_outputs["routing"] = {
+                "agent_type": "supervisor_direct",
+                "intelligence_enabled": False,
+            }
+
+            self.update_trace_preview(
+                user_query=user_query,
+                response_data={"output": [response_message]},
+            )
+
+            return ResponsesAgentResponse(
+                output=[response_message],
+                custom_outputs=custom_outputs,
+            )
+
+        except Exception as e:
+            logger.error(f"Error generating direct response: {e}")
+            error_response = {
+                "role": "assistant",
+                "type": "message",
+                "content": [
+                    {
+                        "type": "output_text",
+                        "text": "I apologize, but I'm experiencing technical difficulties. Please try again in a moment.",
+                    }
+                ],
+                "id": str(uuid4()),
+            }
+            return ResponsesAgentResponse(
+                output=[error_response],
+                custom_outputs=request.custom_inputs.copy()
+                if request.custom_inputs
+                else {},
+            )
+
+    def _handle_direct_response_stream(
+        self, request: ResponsesAgentRequest
+    ) -> Generator[ResponsesAgentStreamEvent, None, None]:
+        """Handle streaming request directly without routing when intelligence is disabled.
+
+        Args:
+            request: The request containing user messages
+
+        Yields:
+            ResponsesAgentStreamEvent objects for direct response
+        """
+        logger.debug("Handling streaming request directly without sub-agent routing")
+
+        # Get the direct response
+        direct_response = self._handle_direct_response(request)
+
+        # Convert the response to streaming events
+        for output_item in direct_response.output:
+            yield ResponsesAgentStreamEvent(
+                type="response.output_item.done", item=output_item
+            )
+
     @mlflow.trace(span_type=SpanType.AGENT, name="supervisor")
     def predict(self, request: ResponsesAgentRequest) -> ResponsesAgentResponse:
         """Process user query, route to, and yield response from sub-agent.
@@ -268,6 +398,17 @@ class SupervisorAgent(BaseAgent):
         Returns:
             The response from the sub-agent
         """
+        # Extract intelligence_enabled from custom_inputs
+        intelligence_enabled = (
+            request.custom_inputs.get("intelligence_enabled", True)
+            if request.custom_inputs
+            else True
+        )
+
+        if not intelligence_enabled:
+            logger.info("Intelligence disabled - using direct response")
+            return self._handle_direct_response(request)
+
         execution_result = self._prepare_agent_execution(request)
 
         if execution_result.error_response:
@@ -336,6 +477,18 @@ class SupervisorAgent(BaseAgent):
         Yields:
             ResponsesAgentStreamEvent objects from the sub-agent
         """
+        # Extract intelligence_enabled from custom_inputs
+        intelligence_enabled = (
+            request.custom_inputs.get("intelligence_enabled", True)
+            if request.custom_inputs
+            else True
+        )
+
+        if not intelligence_enabled:
+            logger.info("Intelligence disabled - using direct response (streaming)")
+            yield from self._handle_direct_response_stream(request)
+            return
+
         execution_result = self._prepare_agent_execution(request)
 
         if execution_result.error_response:

@@ -145,6 +145,7 @@ class TelcoAgentService:
         customer_id: str,
         conversation_history: list[ChatMessage],
         stream: bool = False,
+        intelligence_enabled: bool = True,
     ) -> dict[str, Any]:
         """Build the payload for Databricks API."""
         input_messages = []
@@ -156,12 +157,23 @@ class TelcoAgentService:
 
         payload = {
             "input": input_messages,
-            "custom_inputs": {"customer": customer_id},
+            "custom_inputs": {
+                "customer": customer_id,
+                "intelligence_enabled": intelligence_enabled,
+            },
             "databricks_options": {"return_trace": True},
         }
 
         if stream:
             payload["stream"] = True
+
+        # Debug logging
+        logger.error(
+            f"DEBUG: TelcoAgentService payload - intelligence_enabled: {intelligence_enabled}"
+        )
+        logger.error(
+            f"DEBUG: TelcoAgentService payload - custom_inputs: {payload['custom_inputs']}"
+        )
 
         return payload
 
@@ -434,6 +446,7 @@ class TelcoAgentService:
         message: str,
         customer_id: str,
         conversation_history: list[ChatMessage] = None,
+        intelligence_enabled: bool = True,
     ) -> AgentResponse:
         """Send a message to the telco support agent."""
         if conversation_history is None:
@@ -454,7 +467,11 @@ class TelcoAgentService:
 
         try:
             payload = self._build_databricks_payload(
-                message, customer_id, conversation_history, stream=False
+                message,
+                customer_id,
+                conversation_history,
+                stream=False,
+                intelligence_enabled=intelligence_enabled,
             )
 
             logger.info(f"Sending request to Databricks for customer {customer_id}")
@@ -530,6 +547,7 @@ class TelcoAgentService:
         message: str,
         customer_id: str,
         conversation_history: list[ChatMessage] = None,
+        intelligence_enabled: bool = True,
     ) -> AsyncGenerator[str, None]:
         """Send a message with real streaming response."""
         if conversation_history is None:
@@ -546,11 +564,21 @@ class TelcoAgentService:
 
         try:
             payload = self._build_databricks_payload(
-                message, customer_id, conversation_history, stream=True
+                message,
+                customer_id,
+                conversation_history,
+                stream=True,
+                intelligence_enabled=intelligence_enabled,
             )
 
             logger.info(f"Starting streaming request for customer {customer_id}")
+            logger.error(
+                f"DEBUG: Request endpoint: {self.settings.databricks_endpoint}"
+            )
+            logger.error(f"DEBUG: Request payload: {payload}")
+
             headers = await self._get_headers()
+            logger.error(f"DEBUG: Request headers: {headers}")
 
             # make streaming request
             async with self.client.stream(

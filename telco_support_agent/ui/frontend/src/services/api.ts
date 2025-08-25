@@ -14,15 +14,15 @@ export const currentAgentResponse = ref<AgentResponse | null>(null);
 // Create event emitter to stream agent results
 export const agentResultsEmitter = {
   listeners: new Map<string, Function>(),
-  
+
   addListener(id: string, callback: Function) {
     this.listeners.set(id, callback);
   },
-  
+
   removeListener(id: string) {
     this.listeners.delete(id);
   },
-  
+
   emit(id: string, data: any) {
     const callback = this.listeners.get(id);
     if (callback) {
@@ -69,7 +69,7 @@ const humanizeToolName = (technicalName: string): string => {
     const parts = technicalName.split('__');
     cleanTechnicalName = parts[parts.length - 1];
   }
-  
+
   const toolNameMap: Record<string, string> = {
     'knowledge_base_vector_search': '📚 Knowledge Base Vector Search',
     'support_tickets_vector_search': '🎫 Support Tickets Vector Search',
@@ -83,12 +83,12 @@ const humanizeToolName = (technicalName: string): string => {
     'get_customer_devices': '📲 Get Customer Devices Tool',
     'python_exec': '🐍 Python Executor Tool'
   };
-  
+
   // If we have a mapping for the clean name, use it
   if (toolNameMap[cleanTechnicalName]) {
     return toolNameMap[cleanTechnicalName];
   }
-  
+
   // Otherwise, create a fallback by cleaning up the technical name
   const cleanName = cleanTechnicalName.replace(/_/g, ' ');
   const titleCase = cleanName.replace(/\b\w/g, letter => letter.toUpperCase());
@@ -105,7 +105,7 @@ const createToolDescription = (toolName: string, toolArgs?: any): string => {
     const parts = toolName.split('__');
     cleanToolName = parts[parts.length - 1];
   }
-  
+
   const descriptions: Record<string, string> = {
     'knowledge_base_vector_search': 'Searching help articles and guides',
     'support_tickets_vector_search': 'Looking through support ticket history',
@@ -119,13 +119,13 @@ const createToolDescription = (toolName: string, toolArgs?: any): string => {
     'get_customer_devices': 'Checking registered devices',
     'python_exec': 'Running python code'
   };
-  
+
   let baseDescription = descriptions[cleanToolName];
   if (!baseDescription) {
     const cleanName = cleanToolName.replace(/_/g, ' ');
     baseDescription = `Processing ${cleanName}`;
   }
-  
+
   // Special handling for python_exec - try to infer what it's doing from the code
   if (cleanToolName === 'python_exec' && toolArgs?.code) {
     const code = toolArgs.code.toLowerCase();
@@ -137,7 +137,7 @@ const createToolDescription = (toolName: string, toolArgs?: any): string => {
       baseDescription = 'Running python code';
     }
   }
-  
+
   // Add context from arguments if available (for other tools)
   if (toolArgs && cleanToolName !== 'python_exec') {
     if (toolArgs.query) {
@@ -148,7 +148,7 @@ const createToolDescription = (toolName: string, toolArgs?: any): string => {
       baseDescription += ` from ${toolArgs.start_date} to ${toolArgs.end_date}`;
     }
   }
-  
+
   return baseDescription;
 };
 
@@ -162,7 +162,7 @@ const createNaturalReasoning = (toolName: string, toolArgs?: any): string => {
     const parts = toolName.split('__');
     cleanToolName = parts[parts.length - 1];
   }
-  
+
   const reasoningTemplates: Record<string, string> = {
     'knowledge_base_vector_search': 'I need to search through our help documentation to find the most relevant guides and instructions',
     'support_tickets_vector_search': 'Let me check our support history to see if similar issues have been resolved before',
@@ -176,13 +176,13 @@ const createNaturalReasoning = (toolName: string, toolArgs?: any): string => {
     'get_customer_devices': 'Let me review the devices registered to your account',
     'python_exec': 'I need to perform some calculations to get the exact information you requested'
   };
-  
+
   let reasoning = reasoningTemplates[cleanToolName];
   if (!reasoning) {
     const cleanName = cleanToolName.replace(/_/g, ' ');
     reasoning = `Let me process your request using ${cleanName}`;
   }
-  
+
   // Special handling for python_exec - try to be more specific
   if (cleanToolName === 'python_exec' && toolArgs?.code) {
     const code = toolArgs.code.toLowerCase();
@@ -194,12 +194,12 @@ const createNaturalReasoning = (toolName: string, toolArgs?: any): string => {
       reasoning = 'I need to run some calculations to get the exact information you requested';
     }
   }
-  
+
   // Add specific context for search queries (for other tools)
   if (toolArgs?.query && cleanToolName !== 'python_exec') {
     reasoning += ` related to "${toolArgs.query}"`;
   }
-  
+
   return reasoning;
 };
 
@@ -213,39 +213,39 @@ const summarizeToolResults = (toolName: string, result: any, toolArgs?: any): st
     const parts = toolName.split('__');
     cleanToolName = parts[parts.length - 1];
   }
-  
+
   const summaries: string[] = [];
-  
+
   // Add the humanized tool name as first item
   summaries.push(humanizeToolName(toolName));
-  
+
   if (typeof result === 'string') {
     // Special handling for python_exec results
     if (cleanToolName === 'python_exec') {
       const output = result.trim();
-      
+
       // Check for date range pattern (YYYY-MM-DD YYYY-MM-DD)
       const dateRangeMatch = output.match(/(\d{4}-\d{2}-\d{2})\s+(\d{4}-\d{2}-\d{2})/);
       if (dateRangeMatch) {
         const [, startDate, endDate] = dateRangeMatch;
-        const startFormatted = new Date(startDate).toLocaleDateString('en-US', { 
-          month: 'long', 
-          day: 'numeric', 
-          year: 'numeric' 
+        const startFormatted = new Date(startDate).toLocaleDateString('en-US', {
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric'
         });
-        const endFormatted = new Date(endDate).toLocaleDateString('en-US', { 
-          month: 'long', 
-          day: 'numeric', 
-          year: 'numeric' 
+        const endFormatted = new Date(endDate).toLocaleDateString('en-US', {
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric'
         });
         summaries.push(`✅ Calculated date range: ${startFormatted} - ${endFormatted}`);
-      } 
+      }
       // Check for single date
       else if (output.match(/^\d{4}-\d{2}-\d{2}$/)) {
-        const formatted = new Date(output).toLocaleDateString('en-US', { 
-          month: 'long', 
-          day: 'numeric', 
-          year: 'numeric' 
+        const formatted = new Date(output).toLocaleDateString('en-US', {
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric'
         });
         summaries.push(`✅ Calculated date: ${formatted}`);
       }
@@ -276,7 +276,7 @@ const summarizeToolResults = (toolName: string, result: any, toolArgs?: any): st
       const subscriptions = result.subscriptions;
       const activeCount = subscriptions.filter((sub: any) => sub.status === 'Active').length;
       summaries.push(`✅ Found ${activeCount} active subscription${activeCount !== 1 ? 's' : ''}`);
-      
+
       // Add plan names if available
       const planNames = subscriptions
         .filter((sub: any) => sub.status === 'Active')
@@ -297,12 +297,12 @@ const summarizeToolResults = (toolName: string, result: any, toolArgs?: any): st
       }
     }
   }
-  
+
   // Add query context if available (but not for python_exec)
   if (toolArgs?.query && cleanToolName !== 'python_exec') {
     summaries.push(`🔍 Search term: "${toolArgs.query}"`);
   }
-  
+
   return summaries;
 };
 
@@ -374,15 +374,15 @@ const convertBackendToAgentResponse = (databricksResponse: any): AgentResponse =
         };
 
         // Look for corresponding result in execution_steps
-        const tool_result_step = execution_steps.find((step: any) => 
+        const tool_result_step = execution_steps.find((step: any) =>
           step.step_type === "tool_result" && step.call_id === tool.call_id
         );
 
         if (tool_result_step) {
           // Update tool with humanized result summary
           tool_call.informations = summarizeToolResults(
-            tool_name, 
-            tool_result_step.result, 
+            tool_name,
+            tool_result_step.result,
             tool_args
           );
         }
@@ -394,7 +394,7 @@ const convertBackendToAgentResponse = (databricksResponse: any): AgentResponse =
     // If no tools_used but we have execution_steps with tool_call, process those
     if (tools.length === 0 && execution_steps.length > 0) {
       const tool_call_steps = execution_steps.filter((step: any) => step.step_type === "tool_call");
-      
+
       tool_call_steps.forEach((step: any, index: number) => {
         const tool_name = step.tool_name || "unknown_function";
         const tool_args = step.arguments || {};
@@ -412,15 +412,15 @@ const convertBackendToAgentResponse = (databricksResponse: any): AgentResponse =
         };
 
         // Look for corresponding result
-        const tool_result_step = execution_steps.find((resultStep: any) => 
+        const tool_result_step = execution_steps.find((resultStep: any) =>
           resultStep.step_type === "tool_result" && resultStep.call_id === step.call_id
         );
 
         if (tool_result_step) {
           // Update tool with humanized result summary
           tool_call.informations = summarizeToolResults(
-            tool_name, 
-            tool_result_step.result, 
+            tool_name,
+            tool_result_step.result,
             tool_args
           );
         }
@@ -445,16 +445,16 @@ const convertBackendToAgentResponse = (databricksResponse: any): AgentResponse =
         let coreName = tool.tool_name
           .replace(/^[^\w\s]+\s*/, '') // Remove emoji and leading non-word chars
           .replace(/\s+(Search|Lookup|Details|Information|Analytics|Calculator)$/, ''); // Simplify endings
-        
+
         // Special cases for better readability
         if (coreName === 'Python') coreName = 'Python Calculator';
         if (coreName === 'Knowledge Base') coreName = 'Knowledge Base';
         if (coreName === 'Support History') coreName = 'Support History';
         if (coreName === 'Get Billing Info Tool') coreName = 'Billing Info';
-        
+
         return coreName;
       });
-      
+
       final_informations.push(`🔧 Used ${tools.length} tool${tools.length !== 1 ? 's' : ''} to gather information (${toolNames.join(', ')})`);
     }
 
@@ -492,8 +492,8 @@ const convertBackendToAgentResponse = (databricksResponse: any): AgentResponse =
  * @returns A promise that resolves when the agent response is emitted
  */
 export const sendMessageToAgent = async (
-  messages: ApiMessage[], 
-  messageId: string, 
+  messages: ApiMessage[],
+  messageId: string,
   intelligenceEnabled: boolean = true,
   customerID: string = 'CUS-10001'
 ): Promise<void> => {
@@ -501,7 +501,7 @@ export const sendMessageToAgent = async (
     // Get the last user message
     const userMessages = messages.filter(msg => msg.role === 'user');
     const lastUserMessage = userMessages[userMessages.length - 1];
-    
+
     if (!lastUserMessage) {
       throw new Error('No user message found');
     }
@@ -515,7 +515,8 @@ export const sendMessageToAgent = async (
     const requestPayload = {
       message: lastUserMessage.content,
       customer_id: customerID,
-      conversation_history: conversationHistory
+      conversation_history: conversationHistory,
+      intelligence_enabled: intelligenceEnabled
     };
 
     // Emit thinking start event
@@ -555,37 +556,37 @@ export const sendMessageToAgent = async (
     try {
       while (true) {
         const { done, value } = await reader.read();
-        
+
         if (done) {
           break;
         }
 
         // Decode chunk and add to buffer
         buffer += decoder.decode(value, { stream: true });
-        
+
         // Process complete lines
         const lines = buffer.split('\n');
         buffer = lines.pop() || ''; // Keep incomplete line in buffer
-        
+
         for (const line of lines) {
           if (line.trim() === '') continue;
-          
+
           // Parse Server-Sent Event
           if (line.startsWith('data: ')) {
             const eventData = line.slice(6); // Remove 'data: ' prefix
-            
+
             if (eventData === '[DONE]') {
               break;
             }
-            
+
             try {
               const event: StreamingEvent = JSON.parse(eventData);
-              
+
               // Handle different event types
               switch (event.type) {
                 case 'routing':
                   agentType = event.agent_type || null;
-                  
+
                   if (intelligenceEnabled) {
                     agentResultsEmitter.emit(messageId, {
                       type: 'routing',
@@ -596,7 +597,7 @@ export const sendMessageToAgent = async (
                     });
                   }
                   break;
-                  
+
                 case 'tool_call':
                   if (intelligenceEnabled && event.tool_name && event.call_id) {
                     // Store tool call info for when we get the result
@@ -605,24 +606,24 @@ export const sendMessageToAgent = async (
                       arguments: event.arguments,
                       call_id: event.call_id
                     });
-                    
+
                     // Create tool call for frontend display
                     const toolCall: ToolCall = {
                       tool_name: humanizeToolName(event.tool_name),
-                      description: createToolDescription(event.tool_name, 
+                      description: createToolDescription(event.tool_name,
                         event.arguments ? JSON.parse(event.arguments) : {}),
-                      reasoning: createNaturalReasoning(event.tool_name, 
+                      reasoning: createNaturalReasoning(event.tool_name,
                         event.arguments ? JSON.parse(event.arguments) : {}),
                       type: 'EXTERNAL_API',
                       informations: [
                         humanizeToolName(event.tool_name),
-                        createToolDescription(event.tool_name, 
+                        createToolDescription(event.tool_name,
                           event.arguments ? JSON.parse(event.arguments) : {})
                       ]
                     };
-                    
+
                     toolsUsed.push(toolCall);
-                    
+
                     // Emit tool call started
                     agentResultsEmitter.emit(messageId, {
                       type: 'tool',
@@ -630,7 +631,7 @@ export const sendMessageToAgent = async (
                     });
                   }
                   break;
-                  
+
                 case 'tool_result':
                   if (intelligenceEnabled && event.call_id) {
                     // Get the corresponding tool call
@@ -638,20 +639,20 @@ export const sendMessageToAgent = async (
                     if (toolCall) {
                       // Update tool with result information
                       const updatedInformations = summarizeToolResults(
-                        toolCall.tool_name, 
-                        event.output, 
+                        toolCall.tool_name,
+                        event.output,
                         toolCall.arguments ? JSON.parse(toolCall.arguments) : {}
                       );
-                      
+
                       // Find and update the tool in toolsUsed array
-                      const toolIndex = toolsUsed.findIndex(tool => 
+                      const toolIndex = toolsUsed.findIndex(tool =>
                         currentToolCalls.get(event.call_id!)?.tool_name === toolCall.tool_name
                       );
-                      
+
                       if (toolIndex !== -1) {
                         toolsUsed[toolIndex].informations = updatedInformations;
                       }
-                      
+
                       // Emit tool completion with results
                       agentResultsEmitter.emit(messageId, {
                         type: 'tool_result',
@@ -663,27 +664,27 @@ export const sendMessageToAgent = async (
                     }
                   }
                   break;
-                  
+
                 case 'response_text':
                   // Accumulate response text
                   if (event.text) {
                     finalResponse = event.text;
                   }
                   break;
-                  
+
                 case 'completion':
                   // Final completion event
                   agentType = event.agent_type || agentType;
                   finalResponse = event.final_response || finalResponse;
                   traceId = event.trace_id || traceId;
-                  
+
                   // Build final informations
                   const finalInformations: string[] = [];
-                  
+
                   if (agentType) {
                     finalInformations.push(`📍 Query routed to ${agentType.replace('_', ' ')} agent`);
                   }
-                  
+
                   if (toolsUsed.length > 0) {
                     const toolNames = toolsUsed.map(tool => {
                       let coreName = tool.tool_name
@@ -691,14 +692,14 @@ export const sendMessageToAgent = async (
                         .replace(/\s+(Search|Lookup|Details|Information|Analytics|Calculator)$/, '');
                       return coreName;
                     });
-                    
+
                     finalInformations.push(`🔧 Used ${toolsUsed.length} tool${toolsUsed.length !== 1 ? 's' : ''} to gather information (${toolNames.join(', ')})`);
                   }
-                  
+
                   finalInformations.push(
                     agentType ? `🤖 Response handled by ${agentType.replace('_', ' ')} agent` : '🤖 Response handled by AI assistant'
                   );
-                  
+
                   // Emit final answer
                   agentResultsEmitter.emit(messageId, {
                     type: 'final-answer',
@@ -709,28 +710,28 @@ export const sendMessageToAgent = async (
                     }
                   });
                   return; // Exit the function
-                  
+
                 case 'error':
                   throw new Error(event.error || 'Unknown streaming error');
-                  
+
                 default:
                   console.log('Unknown event type:', event.type, event);
               }
-              
+
             } catch (parseError) {
               console.error('Error parsing streaming event:', parseError, 'Raw data:', eventData);
             }
           }
         }
       }
-      
+
     } finally {
       reader.releaseLock();
     }
 
   } catch (error) {
     console.error('Error in sendMessageToAgent:', error);
-    
+
     // Emit error response
     agentResultsEmitter.emit(messageId, {
       type: 'final-answer',
@@ -739,7 +740,7 @@ export const sendMessageToAgent = async (
         final_informations: ['❌ Error occurred during processing']
       }
     });
-    
+
     throw error;
   }
 };
@@ -753,8 +754,8 @@ export const sendMessageToAgent = async (
  * @returns A promise that resolves when the agent response is emitted
  */
 export const sendMessageToAgentNonStreaming = async (
-  messages: ApiMessage[], 
-  messageId: string, 
+  messages: ApiMessage[],
+  messageId: string,
   intelligenceEnabled: boolean = true,
   customerID: string = 'CUS-10001'
 ): Promise<void> => {
@@ -762,7 +763,7 @@ export const sendMessageToAgentNonStreaming = async (
     // Get the last user message
     const userMessages = messages.filter(msg => msg.role === 'user');
     const lastUserMessage = userMessages[userMessages.length - 1];
-    
+
     if (!lastUserMessage) {
       throw new Error('No user message found');
     }
@@ -776,7 +777,8 @@ export const sendMessageToAgentNonStreaming = async (
     const requestPayload = {
       message: lastUserMessage.content,
       customer_id: customerID,
-      conversation_history: conversationHistory
+      conversation_history: conversationHistory,
+      intelligence_enabled: intelligenceEnabled
     };
 
     // Emit thinking start event
@@ -798,11 +800,11 @@ export const sendMessageToAgentNonStreaming = async (
     }
 
     const backendResponse = await response.json();
-    
+
     // Convert backend response to frontend format
     const agentResponse = convertBackendToAgentResponse(backendResponse);
     agentResponse.question = lastUserMessage.content;
-    
+
     // Extract trace_id from backend response
     const traceId = backendResponse.trace_id;
 
@@ -814,13 +816,13 @@ export const sendMessageToAgentNonStreaming = async (
         if (i > 0) {
           await new Promise(resolve => setTimeout(resolve, 500));
         }
-        
+
         agentResultsEmitter.emit(messageId, {
           type: 'tool',
           data: agentResponse.tools[i]
         });
       }
-      
+
       // Small delay before final answer
       await new Promise(resolve => setTimeout(resolve, 800));
     }
@@ -837,7 +839,7 @@ export const sendMessageToAgentNonStreaming = async (
 
   } catch (error) {
     console.error('Error in sendMessageToAgentNonStreaming:', error);
-    
+
     // Emit error response
     agentResultsEmitter.emit(messageId, {
       type: 'final-answer',
@@ -846,7 +848,7 @@ export const sendMessageToAgentNonStreaming = async (
         final_informations: ['❌ Error occurred during processing']
       }
     });
-    
+
     throw error;
   }
 };
@@ -880,9 +882,9 @@ export const submitFeedback = async (
 
     const result = await response.json();
     console.log('Feedback submitted successfully:', result);
-    return { 
-      success: true, 
-      experimentUrl: result.experiment_url 
+    return {
+      success: true,
+      experimentUrl: result.experiment_url
     };
   } catch (error) {
     console.error('Error submitting feedback:', error);

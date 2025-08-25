@@ -341,6 +341,17 @@ test_cases = [
         "input": [{"role": "user", "content": "My phone won't connect to WiFi"}],
         "description": "Tech support query (no custom inputs required)"
     },
+    # Test intelligence control
+    {
+        "input": [{"role": "user", "content": "What was my data usage in May?"}],
+        "custom_inputs": {"customer": "CUS-10001", "intelligence_enabled": True},
+        "description": "Intelligence enabled - should use tools"
+    },
+    {
+        "input": [{"role": "user", "content": "What was my data usage in May?"}],
+        "custom_inputs": {"customer": "CUS-10001", "intelligence_enabled": False},
+        "description": "Intelligence disabled - should provide generic response"
+    },
 ]
 
 for i, test_case in enumerate(test_cases, 1):
