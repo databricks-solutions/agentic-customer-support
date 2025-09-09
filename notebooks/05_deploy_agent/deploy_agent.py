@@ -188,7 +188,7 @@ print("="*50)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Create Agent Monitor
+# MAGIC ## Setting Up Agent Monitoring
 # MAGIC
 # MAGIC Set up agent monitoring for the deployed agent
 
@@ -220,7 +220,7 @@ if config.monitoring_enabled:
 
 
     try:
-        # create external monitor with custom metrics
+        # create monitoring with custom scorers and built-in scorers.
         uc_config = config.to_uc_config()
         scorers_out = setup_agent_scorers(
             experiment_id=experiment.experiment_id,
@@ -229,14 +229,14 @@ if config.monitoring_enabled:
             custom_scorers=SCORERS,
         )
 
-        print("✅ Monitor created successfully!")
+        print("✅ Monitoring created successfully!")
         print(f"Experiment ID: {experiment.experiment_id}")
-        print(f"Monitor scorers: {scorers_out}")
-        print(f"\nNote: Monitor created with {len(SCORERS) + len(builtin_scores)} scorers assessments.")
+        print(f"Monitoring scorers: {scorers_out}")
+        print(f"\nNote: Monitoring created with {len(SCORERS) + len(builtin_scores)} scorers assessments.")
 
 
     except AgentMonitoringError as e:
-        print(f"❌ Failed to create monitor: {str(e)}")
+        print(f"❌ Failed to create monitoring: {str(e)}")
         if config.monitoring_fail_on_error:
             raise
         else:
@@ -250,7 +250,7 @@ if config.monitoring_enabled:
 
     print("="*50)
 else:
-    print("External monitoring is disabled in configuration")
+    print("Monitoring is disabled in configuration")
     print("To enable, set monitoring_enabled: true in configuration")
 
 # COMMAND ----------

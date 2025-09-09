@@ -14,7 +14,7 @@ logger = get_logger(__name__)
 
 
 class AgentMonitoringError(Exception):
-    """Raised when agent monitoring operations fail."""
+    """Raised when agent monitoring creation operations fail."""
 
     pass
 
@@ -25,11 +25,11 @@ def setup_agent_scorers(
     builtin_scorers: Optional[list[BuiltInScorerWrapper]] = None,
     custom_scorers: Optional[list[BaseScorer]] = None,
 ) -> any:
-    """Set up a set of scorers for the deployed agent with custom scorers.
+    """Set up a set of scorers for the deployed agent with custom scorers and built-in scorers.
 
     Args:
         experiment_id: MLflow experiment ID.
-        replace_existing: Whether to replace the existing monitor.
+        replace_existing: Whether to replace the existing scorers.
         builtin_scorers: List of built-in scorers to use.
         custom_scorers: List of custom scorer functions to use
 
@@ -65,19 +65,19 @@ def setup_agent_scorers(
                 scorer.name: scorer
                 for scorer in list_scorers(experiment_id=experiment_id)
             }
-            logger.info("Adding custom and built-in scorers to monitoring")
+            logger.info("Adding custom and built-in scorers to experiment.")
             for scorer in all_scores:
                 created_scorer = create_scorer(
                     scorer=scorer, scorers_mapping=scorers_mapping
                 )
                 scorers_result.append(created_scorer)
 
-        logger.info(f"Monitor configured with {len(all_scores)} scorers.")
+        logger.info(f"Experiment configured with {len(all_scores)} scorers.")
 
         return scorers_result
 
     except Exception as e:
-        error_msg = f"Failed to create agent monitor: {str(e)}"
+        error_msg = f"Failed to setup experiment scorers: {str(e)}"
         logger.error(error_msg)
         raise AgentMonitoringError(error_msg) from e
 
@@ -87,7 +87,7 @@ def create_scorer(scorer, scorers_mapping):
 
     Args:
         scorer: BaseScorer or BuiltInScorerWrapper object with scorer function and metadata.
-        scorers_mapping: Dict with pre-existing scorers in the actual monitor.
+        scorers_mapping: Dict with pre-existing scorers on the experiment.
 
     Returns:
         Created scorer.
