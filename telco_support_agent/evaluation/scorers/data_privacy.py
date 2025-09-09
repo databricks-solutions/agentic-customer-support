@@ -1,6 +1,6 @@
 """Data privacy evaluation scorers for telco support agent."""
 
-from databricks.agents.evals import metric
+from mlflow.genai.scorers import scorer
 
 from telco_support_agent.evaluation.scorers.base_scorer import (
     GuidelinesScorer,
@@ -17,14 +17,17 @@ class DataPrivacyScorer(GuidelinesScorer):
     ]
 
     def __init__(self):
-        super().__init__("data_privacy", self.guidelines)
+        super().__init__("data_privacy", 1.0, self.guidelines)
 
-    def get_custom_metric(self):
+    def get_online_scorer(self):
         """Implementation of custom metric for offline evaluation."""
 
-        @metric
-        def data_privacy(request: str, response: str):
+        @scorer
+        def data_privacy(inputs, outputs):
             from mlflow.genai.judges import meets_guidelines
+
+            request = str(inputs["request"]["input"])
+            response = str(outputs["output"][-1])
 
             context = {"request": request, "response": response}
             feedback = meets_guidelines(

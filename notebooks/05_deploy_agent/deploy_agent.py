@@ -54,9 +54,6 @@ print("Config loaded successfully!")
 # COMMAND ----------
 
 experiment = mlflow.set_experiment(f"/Shared/telco_support_agent/{config.env}/{config.env}_telco_support_agent")
-os.environ['MLFLOW_EXPERIMENT_ID'] = experiment.experiment_id
-print(experiment.experiment_id)
-
 # COMMAND ----------
 
 print("Deployment configuration:")
@@ -109,12 +106,12 @@ try:
     for i, test_input in enumerate(test_queries, 1):
         print(f"Test {i}: {test_input['input'][0]['content']}")
         response = loaded_model.predict(test_input)
-        
+
         if response and "output" in response and len(response["output"]) > 0:
             print(f"✅ Test {i} passed")
         else:
             raise ValueError(f"Test {i} failed: Model returned empty or invalid response")
-    
+
     print("✅ All model predictions successful")
     print("Proceeding with deployment...")
 
@@ -191,15 +188,16 @@ print("="*50)
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC ## Create External Monitor
+# MAGIC ## Setting Up Agent Monitoring
 # MAGIC
 # MAGIC Set up agent monitoring for the deployed agent
 
 # COMMAND ----------
 
-from telco_support_agent.evaluation import SCORERS
+from telco_support_agent.evaluation import SCORERS, BuiltInScorerWrapper
 from telco_support_agent.ops.monitoring import (AgentMonitoringError,
-                                                create_agent_monitor)
+                                                setup_agent_scorers)
+from mlflow.genai.scorers import Safety
 
 if config.monitoring_enabled:
     print("="*50)
@@ -209,35 +207,36 @@ if config.monitoring_enabled:
     print(f"Experiment ID: {experiment.experiment_id}")
     print(f"Agent catalog: {config.uc_catalog}")
     print(f"Agent schema: {config.agent_schema}")
+    # Adding built-in scorers.
+    builtin_scores = [BuiltInScorerWrapper("safety", 0.8, Safety())]
     # display custom metrics
     print("Custom Telco Assessments:")
-    scorers = SCORERS[:4]
-    for scorer in scorers:
-        print(f"  - {scorer.name}")
+    for scorer in SCORERS:
+        print(f"  - Name: {scorer.name} Sample Rate: {scorer.sample_rate}")
     print()
+    print("Built-in Assessments:")
+    for builtin_scorer in builtin_scores:
+        print(f" - Name: {builtin_scorer.scorer.name} Custom Name: {builtin_scorer.name} Sample Rate: {builtin_scorer.sample_rate}")
+
 
     try:
-        # create external monitor with custom metrics
+        # create monitoring with custom scorers and built-in scorers.
         uc_config = config.to_uc_config()
-        monitor = create_agent_monitor(
-            uc_config=uc_config,
+        scorers_out = setup_agent_scorers(
             experiment_id=experiment.experiment_id,
             replace_existing=config.monitoring_replace_existing,
-            custom_metrics=[scorer.get_custom_metric() for scorer in scorers],
+            builtin_scorers=builtin_scores,
+            custom_scorers=SCORERS,
         )
 
-        print("✅ External monitor created successfully!")
-        print(f"Monitor ID: {getattr(monitor, 'id', 'N/A')}")
-        print(f"Experiment ID: {getattr(monitor, 'experiment_id', 'N/A')}")
-        print(f"Evaluated traces table: {getattr(monitor, 'evaluated_traces_table', 'N/A')}")
+        print("✅ Monitoring created successfully!")
+        print(f"Experiment ID: {experiment.experiment_id}")
+        print(f"Monitoring scorers: {scorers_out}")
+        print(f"\nNote: Monitoring created with {len(SCORERS) + len(builtin_scores)} scorers assessments.")
 
-        if hasattr(monitor, 'monitoring_page_url'):
-            print(f"Monitoring page: {monitor.monitoring_page_url}")
-
-        print(f"\nNote: Monitor created with {len(scorers)} custom scorer assessments.")
 
     except AgentMonitoringError as e:
-        print(f"❌ Failed to create monitor: {str(e)}")
+        print(f"❌ Failed to create monitoring: {str(e)}")
         if config.monitoring_fail_on_error:
             raise
         else:
@@ -251,7 +250,7 @@ if config.monitoring_enabled:
 
     print("="*50)
 else:
-    print("External monitoring is disabled in configuration")
+    print("Monitoring is disabled in configuration")
     print("To enable, set monitoring_enabled: true in configuration")
 
 # COMMAND ----------

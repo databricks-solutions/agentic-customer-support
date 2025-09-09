@@ -1,6 +1,6 @@
 """Query resolution evaluation scorers for telco support agent."""
 
-from databricks.agents.evals import metric
+from mlflow.genai.scorers import scorer
 
 from telco_support_agent.evaluation.scorers.base_scorer import GuidelinesScorer
 
@@ -15,14 +15,17 @@ class QueryResolutionScorer(GuidelinesScorer):
     ]
 
     def __init__(self):
-        super().__init__("query_resolution", self.guidelines)
+        super().__init__("query_resolution", 1.0, self.guidelines)
 
-    def get_custom_metric(self):
+    def get_online_scorer(self):
         """Implementation of custom metric for offline evaluation."""
 
-        @metric
-        def query_resolution(request: str, response: str):
+        @scorer
+        def query_resolution(inputs, outputs):
             from mlflow.genai.judges import meets_guidelines
+
+            request = str(inputs["request"]["input"])
+            response = str(outputs["output"][-1])
 
             context = {"request": request, "response": response}
             feedback = meets_guidelines(

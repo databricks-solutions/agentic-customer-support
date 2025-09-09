@@ -1,6 +1,6 @@
 """Response clarity evaluation scorers for telco support agent."""
 
-from databricks.agents.evals import metric
+from mlflow.genai.scorers import scorer
 
 from telco_support_agent.evaluation.scorers.base_scorer import PromptScorer
 
@@ -30,15 +30,16 @@ class ResponseClarityScorer(PromptScorer):
     def __init__(self):
         super().__init__(
             name="response_clarity",
+            sample_rate=1.0,
             prompt_template=self.prompt,
             numeric_values=self.numeric_values,
         )
 
-    def get_custom_metric(self):
+    def get_online_scorer(self):
         """Implementation of custom metric for offline evaluation."""
 
-        @metric
-        def response_clarity(request: str, response: str):
+        @scorer
+        def response_clarity(inputs, outputs):
             from databricks.agents.evals.judges import custom_prompt_judge
 
             prompt = """Evaluate the clarity and understandability of this telco customer service response:
@@ -70,6 +71,9 @@ class ResponseClarityScorer(PromptScorer):
                 prompt_template=prompt,
                 numeric_values=numeric_values,
             )
+            request = str(inputs["request"]["input"])
+            response = str(outputs["output"][-1])
+
             feedback = judge(request=request, response=response)
             return feedback
 

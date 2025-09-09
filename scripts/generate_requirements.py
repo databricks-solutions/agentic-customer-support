@@ -56,7 +56,7 @@ def generate_requirements():
         dependencies = pyproject.get("project", {}).get("dependencies", [])
     else:
         # Manual parsing fallback
-        with open(pyproject_path, "r") as f:
+        with open(pyproject_path) as f:
             content = f.read()
         dependencies = parse_dependencies_manual(content)
 

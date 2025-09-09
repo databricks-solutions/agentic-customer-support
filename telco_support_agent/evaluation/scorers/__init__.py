@@ -5,6 +5,7 @@
 # future API release will allow for custom scorers to be used in monitoring
 # when this is the case, we can remove the @metrics and use the custom scorers directly
 
+from telco_support_agent.evaluation.scorers.base_scorer import BuiltInScorerWrapper
 from telco_support_agent.evaluation.scorers.brand_compliance import (
     BrandComplianceScorer,
 )
@@ -28,4 +29,4 @@ SCORERS = [
     RoutingAccuracyScorer(),
     ToolAccuracyScorer(),
 ]
-__all__ = ["SCORERS"]
+__all__ = ["SCORERS", "BuiltInScorerWrapper"]

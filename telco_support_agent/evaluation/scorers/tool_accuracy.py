@@ -2,8 +2,8 @@
 
 from typing import Any, Optional
 
-from databricks.agents.evals import metric
 from mlflow.entities import Trace
+from mlflow.genai.scorers import scorer
 
 from telco_support_agent.evaluation.scorers.base_scorer import GuidelinesScorer
 
@@ -21,7 +21,7 @@ class ToolAccuracyScorer(GuidelinesScorer):
     ]
 
     def __init__(self):
-        super().__init__("tool_accuracy", guidelines=self.guidelines)
+        super().__init__("tool_accuracy", 1.0, guidelines=self.guidelines)
 
     def get_context(
         self,
@@ -41,20 +41,30 @@ class ToolAccuracyScorer(GuidelinesScorer):
         for span in spans:
             if span.span_type == "TOOL":
                 tool_name = span.inputs["tool_name"].split("__")[-1]
-                tool_calls.append(tool_name)
-        tools_used = ", ".join(tool_calls) if tool_calls else ""
+                tool_args = span.inputs["args"]
+                tool_calls.append((tool_name, tool_args))
+        tools_used = (
+            "\n".join(
+                [
+                    f"{i + 1}. Tool Name: {tool_name} Arguments: {tool_args}"
+                    for i, (tool_name, tool_args) in enumerate(tool_calls)
+                ]
+            )
+            if tool_calls
+            else ""
+        )
         request = str(inputs["input"])
         response = str(outputs["output"][-1])
         return {"tools_used": tools_used, "request": request, "response": response}
 
-    def get_custom_metric(self):
+    def get_online_scorer(self):
         """Implementation of custom metric for offline evaluation."""
 
-        @metric
+        @scorer
         def tool_accuracy(
-            request: dict[str, Any],
-            response: Optional[dict[str, Any]],
-            trace: Optional[Trace] = None,
+            inputs,
+            outputs,
+            trace,
         ):
             from mlflow.genai.judges import meets_guidelines
 
@@ -63,11 +73,21 @@ class ToolAccuracyScorer(GuidelinesScorer):
             for span in spans:
                 if span.span_type == "TOOL":
                     tool_name = span.inputs["tool_name"].split("__")[-1]
-                    tool_calls.append(tool_name)
-            tools_used = ", ".join(tool_calls) if tool_calls else ""
+                    tool_args = span.inputs["args"]
+                    tool_calls.append((tool_name, tool_args))
+            tools_used = (
+                "\n".join(
+                    [
+                        f"{i + 1}. Tool Name: {tool_name} Arguments: {tool_args}"
+                        for i, (tool_name, tool_args) in enumerate(tool_calls)
+                    ]
+                )
+                if tool_calls
+                else ""
+            )
 
-            request = str(request["request"]["input"])
-            response = str(response["output"][-1])
+            request = str(inputs["request"]["input"])
+            response = str(outputs["output"][-1])
 
             context = {
                 "tools_used": tools_used,
