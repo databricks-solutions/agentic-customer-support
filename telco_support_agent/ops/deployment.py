@@ -78,16 +78,35 @@ def deploy_agent(
     try:
         # deploy agent
         logger.info("Starting deployment...")
-        deployment = agents.deploy(
-            model_name=uc_model_name,
-            model_version=model_version,
-            endpoint_name=deployment_name,
-            tags=tags,
-            scale_to_zero=scale_to_zero_enabled,
-            environment_vars=environment_vars,
-            workload_size=workload_size,
-            budget_policy_id=budget_policy_id,
-        )
+
+        # Check if endpoint exists to determine if we should pass tags
+        w = WorkspaceClient()
+        try:
+            w.serving_endpoints.get(deployment_name)
+            logger.info(f"Endpoint {deployment_name} exists, updating...")
+            # Don't pass tags on update to avoid duplicate key error
+            deployment = agents.deploy(
+                model_name=uc_model_name,
+                model_version=model_version,
+                endpoint_name=deployment_name,
+                scale_to_zero=scale_to_zero_enabled,
+                environment_vars=environment_vars,
+                workload_size=workload_size,
+                budget_policy_id=budget_policy_id,
+            )
+        except Exception:
+            # Endpoint doesn't exist, create new with tags
+            logger.info(f"Creating new endpoint {deployment_name}...")
+            deployment = agents.deploy(
+                model_name=uc_model_name,
+                model_version=model_version,
+                endpoint_name=deployment_name,
+                tags=tags,
+                scale_to_zero=scale_to_zero_enabled,
+                environment_vars=environment_vars,
+                workload_size=workload_size,
+                budget_policy_id=budget_policy_id,
+            )
 
         logger.info(
             f"Agent deployment started. Endpoint name: {deployment.endpoint_name}"
