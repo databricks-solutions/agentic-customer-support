@@ -80,7 +80,6 @@ print(f"Model: {model_uri}")
 
 # COMMAND ----------
 
-# Evaluation data with inputs matching the predict_fn parameters
 eval_data = [
     {
         "inputs": {
@@ -164,7 +163,6 @@ if len(eval_traces) > 0:
     sample_assessments = eval_traces.iloc[0]['assessments']
     for assessment in sample_assessments:
         print(f"  - {assessment["assessment_name"]}: {assessment["feedback"]["value"]}")
-        # Check for rationale in feedback object
         if "rationale" in assessment:
             print(f"    Rationale: {assessment["rationale"]}")
         print()
