@@ -88,4 +88,4 @@ jobs:
           echo "- **Force UI Deploy**: ${{ github.event.inputs.deploy_ui == 'true' && 'Yes' || 'No' }}" >> $GITHUB_STEP_SUMMARY
           echo "- **UI Deployed**: ${{ (github.event.inputs.deploy_ui == 'true' || steps.ui-changes.outputs.changed == 'true') && 'Yes' || 'No' }}" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
-          echo "Ready for production deployment when release tag is created." >> $GITHUB_STEP_SUMMARY
+          echo "✅ Ready for production deployment when release tag is created." >> $GITHUB_STEP_SUMMARY
