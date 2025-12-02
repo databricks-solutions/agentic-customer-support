@@ -154,10 +154,6 @@ for col in eval_traces.columns:
 
 # COMMAND ----------
 
-eval_traces.iloc[0]['trace']
-
-# COMMAND ----------
-
 if len(eval_traces) > 0:
     print("Sample assessments from first trace:")
     sample_assessments = eval_traces.iloc[0]['assessments']
