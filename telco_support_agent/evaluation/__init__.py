@@ -1,5 +1,5 @@
 """Telco support agent evaluation framework."""
 
-from .scorers import SCORERS, BuiltInScorerWrapper
+from .scorers import ALL_SCORERS, SCORER_CONFIGS, SCORER_VERSION
 
-__all__ = ["SCORERS", "BuiltInScorerWrapper"]
+__all__ = ["ALL_SCORERS", "SCORER_CONFIGS", "SCORER_VERSION"]
