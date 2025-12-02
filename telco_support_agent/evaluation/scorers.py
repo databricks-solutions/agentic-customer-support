@@ -99,7 +99,7 @@ Choose the most appropriate clarity rating.""",
 
 @scorer
 def tool_accuracy(inputs: dict, outputs: dict, trace) -> Feedback:
-    """Validates that appropriate tools are called with correct parameters.
+    """Validate that appropriate tools called with correct parameters.
 
     Args:
         inputs: Model input containing user query.
