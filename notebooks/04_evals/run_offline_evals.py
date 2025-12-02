@@ -36,7 +36,7 @@ sys.path.append(project_root)
 # COMMAND ----------
 
 from telco_support_agent.config import RunEvalsConfig, WidgetConfigLoader
-from telco_support_agent.evaluation import ALL_SCORERS
+from telco_support_agent.evaluation import SCORERS
 from telco_support_agent.ops.registry import get_latest_model_version
 
 # COMMAND ----------
@@ -126,7 +126,7 @@ def run_model(input, custom_inputs):
 eval_results = mlflow.genai.evaluate(
     data=eval_data,
     predict_fn=run_model,
-    scorers=[scorer.get_offline_scorer() for scorer in SCORERS],
+    scorers=SCORERS,
 )
 
 print("Evaluation complete!")

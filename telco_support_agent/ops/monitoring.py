@@ -2,7 +2,7 @@
 
 from mlflow.genai.scorers import ScorerSamplingConfig, delete_scorer, list_scorers
 
-from telco_support_agent.evaluation import ALL_SCORERS, SCORER_CONFIGS, SCORER_VERSION
+from telco_support_agent.evaluation import SCORERS, SCORER_CONFIGS, SCORER_VERSION
 from telco_support_agent.utils.logging_utils import get_logger
 
 logger = get_logger(__name__)
@@ -49,10 +49,10 @@ def setup_production_monitoring(
         registered_scorers = []
 
         logger.info(
-            f"Registering {len(ALL_SCORERS)} scorers for experiment: {experiment_id}"
+            f"Registering {len(SCORERS)} scorers for experiment: {experiment_id}"
         )
 
-        for scorer in ALL_SCORERS:
+        for scorer in SCORERS:
             scorer_name = scorer.name
             config = SCORER_CONFIGS.get(scorer_name, {"sample_rate": 1.0})
             sample_rate = config["sample_rate"]
