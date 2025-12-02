@@ -124,7 +124,7 @@ class ResponseFormatter:
     def format_response_summary(response: Dict[str, Any], execution_time: float) -> str:
         """Create a formatted summary of the agent response."""
         if not response:
-            return "❌ No response received"
+            return "No response received"
         
         assistant_message = ResponseFormatter.extract_assistant_message(response)
         function_calls = ResponseFormatter.extract_function_calls(response)
@@ -654,7 +654,7 @@ class FeedbackLogger:
             True if all feedback was logged successfully, False otherwise
         """
         if not trace_id:
-            print("❌ No trace ID provided for feedback logging")
+            print("No trace ID provided for feedback logging")
             return False
         
         success_count = 0
@@ -684,10 +684,10 @@ class FeedbackLogger:
                 )
                 
                 success_count += 1
-                print(f"  ✅ {feedback_name}: {feedback_value} (by {feedback_source})")
-                    
+                print(f"  {feedback_name}: {feedback_value} (by {feedback_source})")
+
             except Exception as e:
-                print(f"  ❌ Failed to log {feedback.get('name', 'unknown')}: {e}")
+                print(f"  Failed to log {feedback.get('name', 'unknown')}: {e}")
                 
                 if "Invalid request id" in str(e) or "Request id must map to a trace" in str(e):
                     try:
@@ -701,12 +701,12 @@ class FeedbackLogger:
                             value=feedback_value,
                             rationale=feedback_rationale,
                         )
-                        
+
                         success_count += 1
-                        print(f"  ✅ {feedback_name}: {feedback_value} (by {feedback_source}) [retry successful]")
-                        
+                        print(f"  {feedback_name}: {feedback_value} (by {feedback_source}) [retry successful]")
+
                     except Exception as retry_e:
-                        print(f"    ❌ Retry also failed: {retry_e}")
+                        print(f"    Retry also failed: {retry_e}")
         
         print(f"Feedback logging complete: {success_count}/{total_count} successful")
         return success_count == total_count
@@ -856,9 +856,9 @@ class SyntheticQueryEngine:
         def execute_single_query(query_data):
             query, custom_inputs, metadata = query_data
             start_time = time.time()
-            
+
             try:
-                print(f"🔍 Executing: {query}...")
+                print(f"Executing: {query}...")
                 
                 # Get response and trace ID
                 response, trace_id = self.client.query_agent(query, custom_inputs)
@@ -872,7 +872,7 @@ class SyntheticQueryEngine:
                 if trace_id:
                     feedback_success = self.feedback_logger.log_feedback_for_query(feedbacks, trace_id)
                 else:
-                    print("⚠️  No trace ID available - skipping feedback logging")
+                    print("WARNING: No trace ID available - skipping feedback logging")
                 
                 return {
                     "query": query,
@@ -890,7 +890,7 @@ class SyntheticQueryEngine:
             except Exception as e:
                 execution_time = time.time() - start_time
                 error_msg = str(e)
-                print(f"❌ Query failed: {error_msg}")
+                print(f"Query failed: {error_msg}")
                 
                 return {
                     "query": query,
@@ -924,12 +924,12 @@ class SyntheticQueryEngine:
         successful_queries = sum(1 for r in results if r["success"])
         failed_queries = total_queries - successful_queries
         feedback_logged = sum(1 for r in results if r.get("feedback_logged", False))
-        
+
         if successful_queries > 0:
             avg_execution_time = sum(r["execution_time"] for r in results if r["success"]) / successful_queries
         else:
             avg_execution_time = 0
-        
+
         category_stats = {}
         for result in results:
             category = result["metadata"]["category"]
@@ -938,7 +938,7 @@ class SyntheticQueryEngine:
             category_stats[category]["total"] += 1
             if result["success"]:
                 category_stats[category]["success"] += 1
-        
+
         print(f"\n{'='*60}")
         print(f"BATCH EXECUTION SUMMARY")
         print(f"{'='*60}")
@@ -948,22 +948,22 @@ class SyntheticQueryEngine:
         print(f"Success Rate: {(successful_queries/total_queries)*100:.1f}%")
         print(f"Average Execution Time: {avg_execution_time:.2f}s")
         print(f"Feedback Logged: {feedback_logged}/{successful_queries}")
-        
+
         print(f"\nCategory Breakdown:")
         for category, stats in category_stats.items():
             success_rate = (stats["success"] / stats["total"]) * 100 if stats["total"] > 0 else 0
             print(f"  {category.title()}: {stats['success']}/{stats['total']} ({success_rate:.1f}%)")
-        
+
         # feedback summary
         total_feedbacks = sum(len(r["feedbacks"]) for r in results if r["success"])
         print(f"\nFeedback Generated: {total_feedbacks} items")
-        
+
         if failed_queries > 0:
             print(f"\nFailed Queries:")
             for result in results:
                 if not result["success"]:
                     print(f"  - {result['query'][:80]}... | Error: {result['error']}")
-        
+
         print(f"{'='*60}\n")
 
 # COMMAND ----------
@@ -1021,32 +1021,32 @@ def test_single_query():
         response, trace_id = client.query_agent(test_query, test_custom_inputs)
         execution_time = time.time() - start_time
         
-        print(f"✅ Query completed successfully!")
+        print(f"Query completed successfully!")
         print(f"Trace ID: {trace_id}")
-        
+
         # Format and display response summary
         print(f"\nRESPONSE SUMMARY:")
         print(f"{formatter.format_response_summary(response, execution_time)}")
-        
+
         # Generate and log feedback
         if trace_id:
             print(f"\nGenerating and logging feedback...")
             metadata = {"category": "account", "persona": "test", "scenario": "test"}
             feedbacks = feedback_gen.generate_feedback(test_query, response, metadata, trace_id)
             feedback_success = feedback_logger.log_feedback_for_query(feedbacks, trace_id)
-            
+
             if feedback_success:
-                print(f"✅ All feedback logged successfully!")
+                print(f"All feedback logged successfully!")
             else:
-                print(f"⚠️  Some feedback logging failed")
+                print(f"WARNING: Some feedback logging failed")
         else:
-            print(f"⚠️  No trace ID - cannot log feedback")
-        
-        print(f"\n✅ Single query test completed successfully!")
+            print(f"WARNING: No trace ID - cannot log feedback")
+
+        print(f"\nSingle query test completed successfully!")
         return True
         
     except Exception as e:
-        print(f"❌ Single query test failed: {e}")
+        print(f"Single query test failed: {e}")
         return False
 
 def test_small_batch():
@@ -1058,7 +1058,7 @@ def test_small_batch():
     formatter = ResponseFormatter()
     
     # generate small batch
-    print("🔧 Generating test queries...")
+    print("Generating test queries...")
     queries = test_engine.generate_query_batch()
     
     print(f"Generated {len(queries)} test queries:")
@@ -1077,20 +1077,20 @@ def test_small_batch():
     # show detailed results for successful queries
     successful_results = [r for r in results if r["success"]]
     if successful_results:
-        print(f"\n📋 DETAILED RESULTS:")
+        print(f"\nDETAILED RESULTS:")
         for i, result in enumerate(successful_results[:2]):  # show first 2
             print(f"\n{'='*50}")
             print(f"Query {i+1}: {result['query']}")
             print(f"Trace ID: {result.get('trace_id', 'N/A')}")
             print(f"Feedbacks: {len(result['feedbacks'])} generated, logged: {result.get('feedback_logged', False)}")
-            
+
             if result['response']:
                 print(f"\n{formatter.format_response_summary(result['response'], result['execution_time'])}")
-            
+
             if result['feedbacks']:
                 print(f"\nFeedback Details:")
                 for feedback in result['feedbacks']:
-                    status = "✅" if feedback['value'] else "❌"
+                    status = "PASS" if feedback['value'] else "FAIL"
                     print(f"  {status} {feedback['name']}: {feedback['value']} (by {feedback['source']})")
                     print(f"    {feedback['rationale']}")
     
@@ -1139,7 +1139,7 @@ def run_synthetic_query_batch(num_queries: int = QUERIES_PER_BATCH) -> Dict[str,
         "results": results
     }
     
-    print(f"✅ Batch execution completed in {batch_total_time:.2f}s")
+    print(f"Batch execution completed in {batch_total_time:.2f}s")
     return summary
 
 def run_continuous_simulation(batches: int = 3, delay_between_batches: int = 300):
@@ -1156,8 +1156,8 @@ def run_continuous_simulation(batches: int = 3, delay_between_batches: int = 300
         try:
             summary = run_synthetic_query_batch()
             all_summaries.append(summary)
-            
-            print(f"✅ Batch {batch_num} completed successfully")
+
+            print(f"Batch {batch_num} completed successfully")
             
             # delay between batches (except for the last one)
             if batch_num < batches:
@@ -1165,7 +1165,7 @@ def run_continuous_simulation(batches: int = 3, delay_between_batches: int = 300
                 time.sleep(delay_between_batches)
                 
         except Exception as e:
-            print(f"❌ Batch {batch_num} failed: {e}")
+            print(f"Batch {batch_num} failed: {e}")
             continue
         
     simulation_total_time = time.time() - simulation_start_time

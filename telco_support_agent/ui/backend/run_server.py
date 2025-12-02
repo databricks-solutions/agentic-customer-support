@@ -14,7 +14,7 @@ if __name__ == "__main__":
     settings = get_settings()
 
     print("=" * 50)
-    print("🚀 Starting Telco Support Agent UI Backend")
+    print("Starting Telco Support Agent UI Backend")
     print("=" * 50)
     print(f"Environment: {settings.environment}")
     print(f"Host: {settings.host}")
@@ -22,9 +22,9 @@ if __name__ == "__main__":
     print(f"Databricks Endpoint: {settings.databricks_endpoint}")
     print("=" * 50)
     print()
-    print("📝 API Documentation: http://localhost:8000/docs")
-    print("🏥 Health Check: http://localhost:8000/health")
-    print("💬 Chat API: http://localhost:8000/api/chat")
+    print("API Documentation: http://localhost:8000/docs")
+    print("Health Check: http://localhost:8000/health")
+    print("Chat API: http://localhost:8000/api/chat")
     print()
     print("Press Ctrl+C to stop the server")
     print("=" * 50)
@@ -32,7 +32,7 @@ if __name__ == "__main__":
     # check if .env file exists
     env_file = current_dir / ".env"
     if not env_file.exists():
-        print("⚠️  WARNING: .env file not found!")
+        print("WARNING: .env file not found!")
         print("   Copy .env.example to .env and configure your settings")
         print("=" * 50)
 
@@ -41,7 +41,7 @@ if __name__ == "__main__":
         not settings.databricks_token
         or settings.databricks_token == "databricks_token_here"  # noqa: S105
     ):
-        print("❌ ERROR: DATABRICKS_TOKEN not configured!")
+        print("ERROR: DATABRICKS_TOKEN not configured!")
         print("   Please set your Databricks token in the .env file")
         sys.exit(1)
 
@@ -54,7 +54,7 @@ if __name__ == "__main__":
             log_level="info",
         )
     except KeyboardInterrupt:
-        print("\n👋 Server stopped by user")
+        print("\nServer stopped by user")
     except Exception as e:
-        print(f"\n❌ Error starting server: {e}")
+        print(f"\nError starting server: {e}")
         sys.exit(1)

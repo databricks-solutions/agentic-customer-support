@@ -93,7 +93,7 @@ print(f"Loading model: {model_uri}")
 
 try:
     loaded_model = mlflow.pyfunc.load_model(model_uri)
-    print("✅ Model loaded successfully")
+    print("Model loaded successfully")
 
     test_queries = [
         {
@@ -108,15 +108,15 @@ try:
         response = loaded_model.predict(test_input)
 
         if response and "output" in response and len(response["output"]) > 0:
-            print(f"✅ Test {i} passed")
+            print(f"Test {i} passed")
         else:
             raise ValueError(f"Test {i} failed: Model returned empty or invalid response")
 
-    print("✅ All model predictions successful")
+    print("All model predictions successful")
     print("Proceeding with deployment...")
 
 except Exception as e:
-    print(f"❌ Pre-deployment validation failed: {str(e)}")
+    print(f"Pre-deployment validation failed: {str(e)}")
     raise RuntimeError("Model validation failed. Deployment aborted.") from e
 
 # COMMAND ----------
@@ -160,13 +160,13 @@ try:
         budget_policy_id=None,
     )
 
-    print("✅ Deployment completed successfully!")
+    print("Deployment completed successfully!")
 
 except AgentDeploymentError as e:
-    print(f"❌ Deployment failed: {str(e)}")
+    print(f"Deployment failed: {str(e)}")
     raise
 except Exception as e:
-    print(f"❌ Unexpected deployment error: {str(e)}")
+    print(f"Unexpected deployment error: {str(e)}")
     raise
 
 # COMMAND ----------
@@ -214,22 +214,22 @@ if config.cleanup_old_versions:
             raise_on_error=False,
         )
 
-        print("✅ Cleanup completed!")
+        print("Cleanup completed!")
         print(f"Versions kept: {cleanup_result['versions_kept']}")
         print(f"Versions deleted: {cleanup_result['versions_deleted']}")
 
         if cleanup_result['versions_failed']:
-            print(f"⚠️ Versions that failed to delete: {cleanup_result['versions_failed']}")
+            print(f"WARNING: Versions that failed to delete: {cleanup_result['versions_failed']}")
             print("These may need manual cleanup or will be retried in future deployments.")
 
         if not cleanup_result['versions_deleted'] and not cleanup_result['versions_failed']:
             print("No old versions found to clean up.")
 
     except AgentDeploymentError as e:
-        print(f"❌ Cleanup failed with error: {str(e)}")
+        print(f"Cleanup failed with error: {str(e)}")
         print("Continuing despite cleanup failure")
     except Exception as e:
-        print(f"❌ Unexpected cleanup error: {str(e)}")
+        print(f"Unexpected cleanup error: {str(e)}")
         print("Continuing despite cleanup failure")
 
     print("="*50)
@@ -292,7 +292,7 @@ for i, test_case in enumerate(test_cases, 1):
             inputs=request_data
         )
 
-        print("✅ Query successful!")
+        print("Query successful!")
 
         for output in response["output"]:
             if "content" in output:
@@ -305,6 +305,6 @@ for i, test_case in enumerate(test_cases, 1):
             print(f"Custom outputs: {response['custom_outputs']}")
 
     except Exception as e:
-        print(f"❌ Query failed: {str(e)}")
+        print(f"Query failed: {str(e)}")
 
-print("\n🎉 Custom inputs endpoint testing completed!")
+print("\nCustom inputs endpoint testing completed!")

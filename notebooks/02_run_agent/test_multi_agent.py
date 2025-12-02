@@ -119,7 +119,7 @@ for domain, functions in results.items():
         total_count += 1
         if status:
             success_count += 1
-        status_str = "✅" if status else "❌"
+        status_str = "PASS" if status else "FAIL"
         print(f"  {status_str} {func_name}")
 
 print(f"\nInitialized {success_count}/{total_count} UC functions")

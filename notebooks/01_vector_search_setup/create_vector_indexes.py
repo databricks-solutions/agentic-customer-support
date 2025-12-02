@@ -72,7 +72,7 @@ vs_manager = VectorSearchManager(
     endpoint_name=vector_search_endpoint_name
 )
 
-print("✅ Vector Search Manager initialized successfully")
+print("Vector Search Manager initialized successfully")
 print(f"   Environment: {env}")
 print(f"   UC Catalog: {uc_catalog}")
 print(f"   Data Schema: {data_schema}")
@@ -118,12 +118,12 @@ for index_type, status in status_summary.items():
     print(f"{index_type.replace('_', ' ').title()} Index:")
 
     if status.get('exists', False):
-        print(f"  ✅ Name: {status['name']}")
+        print(f"  Name: {status['name']}")
         print(f"     State: {status['state']}")
         print(f"     Type: {status['index_type']}")
         print(f"     Endpoint: {status['endpoint']}")
     else:
-        print(f"  ❌ Index does not exist: {status['name']}")
+        print(f"  Index does not exist: {status['name']}")
         if 'error' in status:
             print(f"     Error: {status['error']}")
 

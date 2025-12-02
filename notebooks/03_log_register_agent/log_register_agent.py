@@ -90,7 +90,7 @@ for domain, functions in results.items():
         total_count += 1
         if status:
             success_count += 1
-        status_str = "✅" if status else "❌"
+        status_str = "PASS" if status else "FAIL"
         print(f"  {status_str} {func_name}")
 
 print(f"\nInitialized {success_count}/{total_count} UC functions")
@@ -153,7 +153,7 @@ print(f"Testing with input: {test_input}")
 
 response = loaded_model.predict(test_input)
 
-print("✅ Logged model works correctly")
+print("Logged model works correctly")
 
 # COMMAND ----------
 
@@ -180,4 +180,4 @@ if config.git_commit:
         value=config.git_commit
     )
 
-print(f"✅ Registered: {config.full_model_name} version {model_version.version}")
+print(f"Registered: {config.full_model_name} version {model_version.version}")

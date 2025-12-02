@@ -26,7 +26,7 @@ show_usage() {
 validate_environment() {
     local env=$1
     if [[ "$env" != "dev" && "$env" != "staging" && "$env" != "prod" ]]; then
-        echo "❌ Error: Environment must be 'dev', 'staging', or 'prod'"
+        echo "Error: Environment must be 'dev', 'staging', or 'prod'"
         show_usage
         exit 1
     fi
@@ -36,7 +36,7 @@ validate_environment() {
 check_config_file() {
     local config_file=$1
     if [[ ! -f "$config_file" ]]; then
-        echo "❌ Error: Configuration file $config_file not found"
+        echo "Error: Configuration file $config_file not found"
         echo "Please ensure you have the environment-specific config file"
         exit 1
     fi
@@ -44,7 +44,7 @@ check_config_file() {
 
 # Check arguments
 if [[ $# -eq 0 ]]; then
-    echo "❌ Error: No environment specified"
+    echo "Error: No environment specified"
     show_usage
     exit 1
 fi
@@ -82,7 +82,7 @@ fi
 
 check_config_file "$CONFIG_FILE"
 
-echo "🚀 Deploying Telco Support Agent UI - $ENVIRONMENT Environment"
+echo "Deploying Telco Support Agent UI - $ENVIRONMENT Environment"
 echo "================================================"
 echo "Environment: $ENVIRONMENT"
 echo "Config file: $CONFIG_FILE"
@@ -92,7 +92,7 @@ echo "Databricks profile: $DATABRICKS_PROFILE"
 echo "================================================"
 
 # Build frontend
-echo "📦 Building frontend..."
+echo "Building frontend..."
 if [ -d "frontend" ]; then
     cd frontend
     
@@ -104,23 +104,23 @@ if [ -d "frontend" ]; then
     npm run build
     
     if [ -d "dist" ]; then
-        echo "✅ Frontend built successfully"
+        echo "Frontend built successfully"
         cd ..
         
         # Move to static directory in root
         rm -rf static/
         mv frontend/dist static/
-        echo "✅ Static files moved to root/static/"
+        echo "Static files moved to root/static/"
     else
-        echo "❌ Frontend build failed - no dist directory created"
+        echo "Frontend build failed - no dist directory created"
         exit 1
     fi
 else
-    echo "⚠️  No frontend directory found, skipping frontend build"
+    echo "WARNING: No frontend directory found, skipping frontend build"
 fi
 
 # Create deployment package
-echo "📦 Creating deployment package..."
+echo "Creating deployment package..."
 rm -rf .databricks_app_build/
 mkdir -p .databricks_app_build/
 
@@ -145,26 +145,26 @@ rsync -av \
     ./ .databricks_app_build/
 
 # Copy the appropriate config file as app.yaml
-echo "📝 Using configuration file: $CONFIG_FILE"
+echo "Using configuration file: $CONFIG_FILE"
 cp "$CONFIG_FILE" .databricks_app_build/app.yaml
 
-echo "✅ Deployment package created"
+echo "Deployment package created"
 
 # Upload to workspace
-echo "📁 Uploading to workspace..."
+echo "Uploading to workspace..."
 databricks workspace delete "$APP_FOLDER_IN_WORKSPACE" --recursive $PROFILE_FLAG 2>/dev/null || true
 databricks workspace import-dir .databricks_app_build "$APP_FOLDER_IN_WORKSPACE" --overwrite $PROFILE_FLAG
-echo "✅ Files uploaded to workspace"
+echo "Files uploaded to workspace"
 
 # Create app if doesn't exist
-echo "🚀 Creating/Deploying Databricks application..."
+echo "Creating/Deploying Databricks application..."
 if ! databricks apps get "$LAKEHOUSE_APP_NAME" $PROFILE_FLAG >/dev/null 2>&1; then
-  echo "📱 Creating new app: $LAKEHOUSE_APP_NAME"
+  echo "Creating new app: $LAKEHOUSE_APP_NAME"
   databricks apps create "$LAKEHOUSE_APP_NAME" $PROFILE_FLAG
 fi
 
 # Deploy the application
-echo "🚀 Deploying to app: $LAKEHOUSE_APP_NAME"
+echo "Deploying to app: $LAKEHOUSE_APP_NAME"
 databricks apps deploy "$LAKEHOUSE_APP_NAME" \
   --source-code-path "$APP_FOLDER_IN_WORKSPACE" \
   $PROFILE_FLAG
@@ -174,16 +174,16 @@ rm -rf .databricks_app_build/
 
 # Print success message
 echo ""
-echo "🎉 Deployment completed successfully!"
+echo "Deployment completed successfully!"
 echo "================================================"
 echo "Environment: $ENVIRONMENT"
 echo "Endpoint: ${ENVIRONMENT}-telco-customer-support-agent"
 echo "App name: $LAKEHOUSE_APP_NAME"
 echo "Workspace folder: $APP_FOLDER_IN_WORKSPACE"
 echo ""
-echo "📱 Check app status:"
+echo "Check app status:"
 echo "   databricks apps get $LAKEHOUSE_APP_NAME $PROFILE_FLAG"
 echo ""
-echo "📋 View logs:"
+echo "View logs:"
 echo "   databricks apps logs $LAKEHOUSE_APP_NAME $PROFILE_FLAG"
 echo "================================================"
