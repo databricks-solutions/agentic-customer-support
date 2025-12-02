@@ -4,8 +4,8 @@ from mlflow.genai.scorers import ScorerSamplingConfig, delete_scorer, list_score
 
 from telco_support_agent.evaluation import (
     REGISTERABLE_SCORERS,
-    SCORERS,
     SCORER_CONFIGS,
+    SCORERS,
 )
 from telco_support_agent.utils.logging_utils import get_logger
 
@@ -50,7 +50,9 @@ def setup_production_monitoring(
                     delete_scorer(name=scorer.name)
                     logger.info(f"Deleted scorer: {scorer.name}")
             except ValueError:
-                logger.info(f"No existing scorers found for experiment: {experiment_id}")
+                logger.info(
+                    f"No existing scorers found for experiment: {experiment_id}"
+                )
 
         # Register and start scorers
         registered_scorers = []
