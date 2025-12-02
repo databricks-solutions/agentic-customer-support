@@ -6,7 +6,7 @@ from mlflow.entities import Feedback
 from mlflow.genai.judges import make_judge
 from mlflow.genai.scorers import Guidelines, RelevanceToQuery, Safety, scorer
 
-DEFAULT_JUDGE_MODEL = "databricks-claude-sonnet-4-5"
+DEFAULT_JUDGE_MODEL = "databricks:/databricks-claude-sonnet-4-5"
 # version tag for all scorers
 SCORER_VERSION = "1.0"
 
