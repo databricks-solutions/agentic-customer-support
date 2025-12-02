@@ -36,7 +36,7 @@ sys.path.append(project_root)
 # COMMAND ----------
 
 from telco_support_agent.config import RunEvalsConfig, WidgetConfigLoader
-from telco_support_agent.evaluation import SCORERS
+from telco_support_agent.evaluation import ALL_SCORERS
 from telco_support_agent.ops.registry import get_latest_model_version
 
 # COMMAND ----------

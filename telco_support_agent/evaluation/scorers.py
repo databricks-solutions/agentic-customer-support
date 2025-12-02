@@ -174,7 +174,7 @@ relevance = RelevanceToQuery()
 # ==============================================================================
 
 # All scorers for offline evaluation and production monitoring
-ALL_SCORERS = [
+SCORERS = [
     brand_compliance,
     data_privacy,
     query_resolution,
