@@ -147,7 +147,9 @@ def tool_accuracy(inputs: dict, outputs: dict, trace) -> Feedback:
 
         # Check for unnecessary tool calls
         if not expected_tools and tool_calls:
-            return Feedback(value="no", rationale=f"Unnecessary tool calls: {called_tools}")
+            return Feedback(
+                value="no", rationale=f"Unnecessary tool calls: {called_tools}"
+            )
 
         return Feedback(
             value="yes",

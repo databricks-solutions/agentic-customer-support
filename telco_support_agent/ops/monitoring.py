@@ -43,7 +43,9 @@ def setup_production_monitoring(
                     delete_scorer(name=scorer.name)
                     logger.info(f"Deleted scorer: {scorer.name}")
             except ValueError:
-                logger.info(f"No existing scorers found for experiment: {experiment_id}")
+                logger.info(
+                    f"No existing scorers found for experiment: {experiment_id}"
+                )
 
         # Register and start all scorers
         registered_scorers = []
