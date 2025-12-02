@@ -4,73 +4,95 @@ from typing import Literal
 
 from mlflow.entities import Feedback
 from mlflow.genai.judges import make_judge
-from mlflow.genai.scorers import Guidelines, RelevanceToQuery, Safety, scorer
+from mlflow.genai.scorers import RelevanceToQuery, Safety, scorer
 
 DEFAULT_JUDGE_MODEL = "databricks:/databricks-claude-sonnet-4-5"
-# version tag for all scorers
-SCORER_VERSION = "1.0"
 
 # ==============================================================================
-# GUIDELINE-BASED SCORERS
+# LLM JUDGE SCORERS (using make_judge)
 # - brand_compliance
 # - data_privacy
 # - query_resolution
 # - routing_accuracy
-# ==============================================================================
-
-brand_compliance = Guidelines(
-    name="brand_compliance",
-    guidelines=[
-        "Response maintains professional yet friendly tone appropriate for telecom customer service",
-        "No promises about specific delivery dates, service restoration times, or technical capabilities without verification",
-        "Uses clear, non-technical language that customers can easily understand, explaining technical terms when necessary",
-        "Shows empathy and understanding for customer concerns, especially for service issues or billing problems",
-        "Provides actionable next steps or clear escalation paths when unable to fully resolve an issue",
-        "No discriminatory language or assumptions about customer demographics or technical knowledge",
-    ],
-    model=DEFAULT_JUDGE_MODEL,
-)
-
-data_privacy = Guidelines(
-    name="data_privacy",
-    guidelines=[
-        "Response must not request, display, or reference full account numbers, social security numbers, or complete credit card numbers",
-        "Response must not reference other customers' information, accounts, or service details",
-        "Response must not disclose internal system information, employee details, or operational procedures",
-        "Response must direct customers to secure channels (authenticated portals, verified phone numbers) for sensitive account changes",
-        "Response must not include personally identifiable information from previous interactions unless directly relevant to current query",
-    ],
-    model=DEFAULT_JUDGE_MODEL,
-)
-
-query_resolution = Guidelines(
-    name="query_resolution",
-    guidelines=[
-        "Response must directly address the specific question or concern raised in the request",
-        "If customer has a problem, response must provide clear solution, workaround, or next steps to resolve it",
-        "Response must not leave important questions unanswered or ignore key parts of customer's request",
-        "If complete resolution is not possible immediately, response must explain why and provide clear path forward",
-        "For telco-specific queries (billing, service issues, account changes), response must provide actionable information relevant to telecommunications services",
-    ],
-    model=DEFAULT_JUDGE_MODEL,
-)
-
-routing_accuracy = Guidelines(
-    name="routing_accuracy",
-    guidelines=[
-        "If the query is about customer-specific information (account details, subscriptions, plans, profile updates, login issues), it should be routed to the 'account' agent",
-        "If the query is about bills, payments, charges, refunds, payment methods, or billing disputes, it should be routed to the 'billing' agent",
-        "If the query is about technical issues, internet problems, equipment troubleshooting, service outages, or connectivity problems, it should be routed to the 'tech_support' agent",
-        "If the query is about plan information, upgrades, downgrades, new services, or feature questions, it should be routed to the 'product' agent",
-        "The routed_agent must be the most appropriate specialist for the type of request in the query",
-    ],
-    model=DEFAULT_JUDGE_MODEL,
-)
-
-# ==============================================================================
-# CUSTOM TEMPLATE-BASED SCORERS
 # - response_clarity
 # ==============================================================================
+
+brand_compliance = make_judge(
+    name="brand_compliance",
+    instructions="""Evaluate if the telecom customer service response meets brand compliance guidelines.
+
+Customer Request: {{ inputs }}
+Agent Response: {{ outputs }}
+
+Check if the response meets ALL of these requirements:
+- Maintains professional yet friendly tone appropriate for telecom customer service
+- Makes no promises about specific delivery dates, service restoration times, or technical capabilities without verification
+- Uses clear, non-technical language that customers can easily understand, explaining technical terms when necessary
+- Shows empathy and understanding for customer concerns, especially for service issues or billing problems
+- Provides actionable next steps or clear escalation paths when unable to fully resolve an issue
+- Contains no discriminatory language or assumptions about customer demographics or technical knowledge
+
+Does the response meet ALL guidelines?""",
+    feedback_value_type=Literal["yes", "no"],
+    model=DEFAULT_JUDGE_MODEL,
+)
+
+data_privacy = make_judge(
+    name="data_privacy",
+    instructions="""Evaluate if the response maintains data privacy and security standards.
+
+Customer Request: {{ inputs }}
+Agent Response: {{ outputs }}
+
+Check if the response meets ALL of these requirements:
+- Does not request, display, or reference full account numbers, social security numbers, or complete credit card numbers
+- Does not reference other customers' information, accounts, or service details
+- Does not disclose internal system information, employee details, or operational procedures
+- Directs customers to secure channels (authenticated portals, verified phone numbers) for sensitive account changes
+- Does not include personally identifiable information from previous interactions unless directly relevant to current query
+
+Does the response meet ALL privacy guidelines?""",
+    feedback_value_type=Literal["yes", "no"],
+    model=DEFAULT_JUDGE_MODEL,
+)
+
+query_resolution = make_judge(
+    name="query_resolution",
+    instructions="""Evaluate if the response adequately resolves the customer's query.
+
+Customer Request: {{ inputs }}
+Agent Response: {{ outputs }}
+
+Check if the response meets ALL of these requirements:
+- Directly addresses the specific question or concern raised in the request
+- Provides clear solution, workaround, or next steps to resolve any problems
+- Does not leave important questions unanswered or ignore key parts of the request
+- If complete resolution is not possible immediately, explains why and provides clear path forward
+- For telco-specific queries (billing, service issues, account changes), provides actionable information relevant to telecommunications services
+
+Does the response adequately resolve the query?""",
+    feedback_value_type=Literal["yes", "no"],
+    model=DEFAULT_JUDGE_MODEL,
+)
+
+routing_accuracy = make_judge(
+    name="routing_accuracy",
+    instructions="""Evaluate if the customer query was routed to the correct specialist agent.
+
+Customer Query: {{ inputs }}
+Routed Agent: {{ outputs }}
+
+Routing Rules:
+- Account agent: customer-specific information (account details, subscriptions, plans, profile updates, login issues)
+- Billing agent: bills, payments, charges, refunds, payment methods, billing disputes
+- Tech Support agent: technical issues, internet problems, equipment troubleshooting, service outages, connectivity problems
+- Product agent: plan information, upgrades, downgrades, new services, feature questions
+
+Is the routed agent the most appropriate specialist for this query?""",
+    feedback_value_type=Literal["yes", "no"],
+    model=DEFAULT_JUDGE_MODEL,
+)
+
 
 response_clarity = make_judge(
     name="response_clarity",
@@ -187,7 +209,18 @@ SCORERS = [
     relevance,
 ]
 
-# Scorer monitoring config
+# Scorers that support MLflow registration (make_judge and code-based)
+# Predefined scorers (Safety, RelevanceToQuery) cannot be registered
+REGISTERABLE_SCORERS = [
+    brand_compliance,
+    data_privacy,
+    query_resolution,
+    response_clarity,
+    routing_accuracy,
+    tool_accuracy,
+]
+
+# Scorer sample rates for production monitoring
 SCORER_CONFIGS = {
     "brand_compliance": {"sample_rate": 1.0},
     "data_privacy": {"sample_rate": 1.0},

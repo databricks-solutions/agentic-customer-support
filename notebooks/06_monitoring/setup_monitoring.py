@@ -29,10 +29,12 @@ dbutils.widgets.dropdown("replace_existing", "true", ["true", "false"])
 
 import mlflow
 
-from telco_support_agent.evaluation import SCORER_CONFIGS, SCORER_VERSION, SCORERS
-from telco_support_agent.ops.monitoring import (
-    setup_production_monitoring,
+from telco_support_agent.evaluation import (
+    REGISTERABLE_SCORERS,
+    SCORER_CONFIGS,
+    SCORERS,
 )
+from telco_support_agent.ops.monitoring import setup_production_monitoring
 
 # COMMAND ----------
 
@@ -52,7 +54,6 @@ print(f"  Experiment: {experiment.name}")
 print(f"  Experiment ID: {experiment.experiment_id}")
 print(f"  Environment: {env}")
 print(f"  Replace Existing: {replace_existing}")
-print(f"  Scorer Version: {SCORER_VERSION}")
 
 # COMMAND ----------
 
@@ -61,13 +62,17 @@ print(f"  Scorer Version: {SCORER_VERSION}")
 
 # COMMAND ----------
 
-print(f"Scorers to register: {len(SCORERS)}")
+print(f"Total scorers: {len(SCORERS)}")
+print(f"Registerable scorers: {len(REGISTERABLE_SCORERS)} (make_judge and code-based)")
+print(f"Non-registerable: {len(SCORERS) - len(REGISTERABLE_SCORERS)} (Predefined: Safety, RelevanceToQuery)")
 print()
 for scorer in SCORERS:
     scorer_name = scorer.name
     config = SCORER_CONFIGS.get(scorer_name, {"sample_rate": 1.0})
     sample_rate = config["sample_rate"]
-    print(f"  - {scorer_name}: {sample_rate * 100}% sampling")
+    registerable = scorer in REGISTERABLE_SCORERS
+    status = "Will register" if registerable else "Direct use"
+    print(f"  - {scorer_name}: {sample_rate * 100}% sampling [{status}]")
 
 # COMMAND ----------
 
@@ -89,10 +94,13 @@ print()
 print("=" * 50)
 print("MONITORING SETUP COMPLETE")
 print("=" * 50)
-print(f"Active Scorers: {len(scorers)}")
-print(f"Scorer Version: {SCORER_VERSION}")
+print(f"Registered Scorers: {len(scorers)}")
+print(f"Total Scorers: {len(SCORERS)}")
 print()
-print("Scorers are now evaluating production traffic.")
+print("Note: Predefined scorers (Safety, RelevanceToQuery) are used directly")
+print("without registration as per MLflow 3.x design.")
+print()
+print("All scorers are now evaluating production traffic.")
 print(f"View results in the MLflow experiment: {experiment.name}")
 
 # COMMAND ----------
