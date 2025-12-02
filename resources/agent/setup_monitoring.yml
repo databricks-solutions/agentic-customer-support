@@ -1,0 +1,32 @@
+# Agent Monitoring Setup Pipeline
+#
+# Databricks job that sets up production monitoring for deployed agents:
+# - Registers scorers with the MLflow experiment
+# - Starts monitoring with configured sample rates
+# - Can be run independently to update scorer definitions or sample rates
+
+resources:
+  jobs:
+    setup_monitoring:
+      name: telco_setup_monitoring_${bundle.target}
+      tasks:
+        - task_key: setup_monitoring
+          notebook_task:
+            notebook_path: ../../notebooks/06_monitoring/setup_monitoring.py
+            base_parameters:
+              experiment_name: ${var.experiment_name}
+              env: ${bundle.target}
+              replace_existing: "true"
+          job_cluster_key: default_cluster
+
+      job_clusters:
+        - job_cluster_key: default_cluster
+          new_cluster:
+            spark_version: 15.4.x-cpu-ml-scala2.12
+            node_type_id: i3.xlarge
+            num_workers: 0
+            spark_conf:
+              spark.databricks.cluster.profile: singleNode
+              spark.master: local[*]
+            custom_tags:
+              ResourceClass: SingleNode
