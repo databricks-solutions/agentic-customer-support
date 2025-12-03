@@ -81,32 +81,30 @@ def deploy_agent(
 
         # Check if endpoint exists to determine if we should pass tags
         w = WorkspaceClient()
+        endpoint_exists = False
         try:
             w.serving_endpoints.get(deployment_name)
+            endpoint_exists = True
             logger.info(f"Endpoint {deployment_name} exists, updating...")
-            # Don't pass tags on update to avoid duplicate key error
-            deployment = agents.deploy(
-                model_name=uc_model_name,
-                model_version=model_version,
-                endpoint_name=deployment_name,
-                scale_to_zero=scale_to_zero_enabled,
-                environment_vars=environment_vars,
-                workload_size=workload_size,
-                budget_policy_id=budget_policy_id,
-            )
-        except Exception:
-            # Endpoint doesn't exist, create new with tags
-            logger.info(f"Creating new endpoint {deployment_name}...")
-            deployment = agents.deploy(
-                model_name=uc_model_name,
-                model_version=model_version,
-                endpoint_name=deployment_name,
-                tags=tags,
-                scale_to_zero=scale_to_zero_enabled,
-                environment_vars=environment_vars,
-                workload_size=workload_size,
-                budget_policy_id=budget_policy_id,
-            )
+        except Exception as e:
+            # Endpoint doesn't exist if we get a ResourceDoesNotExist or similar error
+            if "does not exist" in str(e).lower() or "not found" in str(e).lower():
+                logger.info(f"Endpoint {deployment_name} does not exist, will create new...")
+            else:
+                # Re-raise if it's a different error
+                raise
+
+        # Deploy without tags to avoid duplicate key errors
+        # Tags can be managed separately via the Databricks UI or API if needed
+        deployment = agents.deploy(
+            model_name=uc_model_name,
+            model_version=model_version,
+            endpoint_name=deployment_name,
+            scale_to_zero=scale_to_zero_enabled,
+            environment_vars=environment_vars,
+            workload_size=workload_size,
+            budget_policy_id=budget_policy_id,
+        )
 
         logger.info(
             f"Agent deployment started. Endpoint name: {deployment.endpoint_name}"
