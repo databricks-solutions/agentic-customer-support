@@ -17,17 +17,17 @@ def main():
 
         port = int(os.getenv("DATABRICKS_APP_PORT", "8000"))
 
-        print("🚀 Starting Telco Support Agent UI")
-        print(f"📁 Working directory: {os.getcwd()}")
-        print(f"🌐 Port: {port}")
-        print(f"📦 Backend path: {backend_dir}")
+        print("Starting Telco Support Agent UI")
+        print(f"Working directory: {os.getcwd()}")
+        print(f"Port: {port}")
+        print(f"Backend path: {backend_dir}")
 
         static_dir = current_dir / "static"
         if static_dir.exists():
             file_count = len(list(static_dir.glob("*")))
-            print(f"📄 Static files: {file_count} files found")
+            print(f"Static files: {file_count} files found")
         else:
-            print("⚠️  No static directory found")
+            print("WARNING: No static directory found")
 
         uvicorn.run(
             app,
@@ -37,7 +37,7 @@ def main():
         )
 
     except Exception as e:
-        print(f"❌ Error starting app: {e}")
+        print(f"Error starting app: {e}")
         import traceback
 
         traceback.print_exc()

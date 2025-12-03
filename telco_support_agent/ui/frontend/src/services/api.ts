@@ -71,17 +71,17 @@ const humanizeToolName = (technicalName: string): string => {
   }
   
   const toolNameMap: Record<string, string> = {
-    'knowledge_base_vector_search': '📚 Knowledge Base Vector Search',
-    'support_tickets_vector_search': '🎫 Support Tickets Vector Search',
-    'get_customer_info': '👤 Get Customer Info Tool',
-    'get_customer_subscriptions': '📋 Get Customer Subscriptions Tool',
-    'get_billing_info': '💳 Get Billing Info Tool',
-    'get_usage_info': '📊 Get Usage Info Tools',
-    'get_plans_info': '📝 Get Plans Info Tools',
-    'get_devices_info': '📱 Get Devices Info Tools',
-    'get_promotions_info': '🎯 Get Promotions Tool',
-    'get_customer_devices': '📲 Get Customer Devices Tool',
-    'python_exec': '🐍 Python Executor Tool'
+    'knowledge_base_vector_search': 'Knowledge Base Vector Search',
+    'support_tickets_vector_search': 'Support Tickets Vector Search',
+    'get_customer_info': 'Get Customer Info Tool',
+    'get_customer_subscriptions': 'Get Customer Subscriptions Tool',
+    'get_billing_info': 'Get Billing Info Tool',
+    'get_usage_info': 'Get Usage Info Tools',
+    'get_plans_info': 'Get Plans Info Tools',
+    'get_devices_info': 'Get Devices Info Tools',
+    'get_promotions_info': 'Get Promotions Tool',
+    'get_customer_devices': 'Get Customer Devices Tool',
+    'python_exec': 'Python Executor Tool'
   };
   
   // If we have a mapping for the clean name, use it
@@ -238,7 +238,7 @@ const summarizeToolResults = (toolName: string, result: any, toolArgs?: any): st
           day: 'numeric', 
           year: 'numeric' 
         });
-        summaries.push(`✅ Calculated date range: ${startFormatted} - ${endFormatted}`);
+        summaries.push(`PASS: Calculated date range: ${startFormatted} - ${endFormatted}`);
       } 
       // Check for single date
       else if (output.match(/^\d{4}-\d{2}-\d{2}$/)) {
@@ -247,11 +247,11 @@ const summarizeToolResults = (toolName: string, result: any, toolArgs?: any): st
           day: 'numeric', 
           year: 'numeric' 
         });
-        summaries.push(`✅ Calculated date: ${formatted}`);
+        summaries.push(`PASS: Calculated date: ${formatted}`);
       }
       // Check for numeric results
       else if (output.match(/^[\d.]+$/)) {
-        summaries.push(`✅ Calculated result: ${output}`);
+        summaries.push(`PASS: Calculated result: ${output}`);
       }
       // Generic calculation result
       else {
@@ -300,7 +300,7 @@ const summarizeToolResults = (toolName: string, result: any, toolArgs?: any): st
   
   // Add query context if available (but not for python_exec)
   if (toolArgs?.query && cleanToolName !== 'python_exec') {
-    summaries.push(`🔍 Search term: "${toolArgs.query}"`);
+    summaries.push(`INFO: Search term: "${toolArgs.query}"`);
   }
   
   return summaries;
@@ -460,7 +460,7 @@ const convertBackendToAgentResponse = (databricksResponse: any): AgentResponse =
 
     // 3. Finally show who handled it (summary)
     final_informations.push(
-      agent_type ? `🤖 Response handled by ${agent_type.replace('_', ' ')} agent` : '🤖 Response handled by AI assistant'
+      agent_type ? `Response handled by ${agent_type.replace('_', ' ')} agent` : 'Response handled by AI assistant'
     );
 
     return {
@@ -477,7 +477,7 @@ const convertBackendToAgentResponse = (databricksResponse: any): AgentResponse =
       question: '',
       tools: [],
       final_answer: "I encountered an error processing your request. Please try again.",
-      final_informations: ['❌ Error occurred during processing'],
+      final_informations: ['ERROR: occurred during processing'],
       non_intelligent_answer: "I encountered an error processing your request. Please try again."
     };
   }
@@ -696,7 +696,7 @@ export const sendMessageToAgent = async (
                   }
                   
                   finalInformations.push(
-                    agentType ? `🤖 Response handled by ${agentType.replace('_', ' ')} agent` : '🤖 Response handled by AI assistant'
+                    agentType ? `Response handled by ${agentType.replace('_', ' ')} agent` : 'Response handled by AI assistant'
                   );
                   
                   // Emit final answer
@@ -736,7 +736,7 @@ export const sendMessageToAgent = async (
       type: 'final-answer',
       data: {
         final_answer: 'I apologize, but I encountered an error processing your request. Please try again.',
-        final_informations: ['❌ Error occurred during processing']
+        final_informations: ['ERROR: occurred during processing']
       }
     });
     
@@ -843,7 +843,7 @@ export const sendMessageToAgentNonStreaming = async (
       type: 'final-answer',
       data: {
         final_answer: 'I apologize, but I encountered an error processing your request. Please try again.',
-        final_informations: ['❌ Error occurred during processing']
+        final_informations: ['ERROR: occurred during processing']
       }
     });
     

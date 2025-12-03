@@ -80,7 +80,6 @@ print(f"Model: {model_uri}")
 
 # COMMAND ----------
 
-# Evaluation data with inputs matching the predict_fn parameters
 eval_data = [
     {
         "inputs": {
@@ -126,7 +125,7 @@ def run_model(input, custom_inputs):
 eval_results = mlflow.genai.evaluate(
     data=eval_data,
     predict_fn=run_model,
-    scorers=[scorer.get_offline_scorer() for scorer in SCORERS],
+    scorers=SCORERS,
 )
 
 print("Evaluation complete!")
@@ -155,16 +154,11 @@ for col in eval_traces.columns:
 
 # COMMAND ----------
 
-eval_traces.iloc[0]['trace']
-
-# COMMAND ----------
-
 if len(eval_traces) > 0:
     print("Sample assessments from first trace:")
     sample_assessments = eval_traces.iloc[0]['assessments']
     for assessment in sample_assessments:
         print(f"  - {assessment["assessment_name"]}: {assessment["feedback"]["value"]}")
-        # Check for rationale in feedback object
         if "rationale" in assessment:
             print(f"    Rationale: {assessment["rationale"]}")
         print()

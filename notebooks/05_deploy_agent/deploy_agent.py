@@ -93,7 +93,7 @@ print(f"Loading model: {model_uri}")
 
 try:
     loaded_model = mlflow.pyfunc.load_model(model_uri)
-    print("✅ Model loaded successfully")
+    print("Model loaded successfully")
 
     test_queries = [
         {
@@ -108,15 +108,15 @@ try:
         response = loaded_model.predict(test_input)
 
         if response and "output" in response and len(response["output"]) > 0:
-            print(f"✅ Test {i} passed")
+            print(f"Test {i} passed")
         else:
             raise ValueError(f"Test {i} failed: Model returned empty or invalid response")
 
-    print("✅ All model predictions successful")
+    print("All model predictions successful")
     print("Proceeding with deployment...")
 
 except Exception as e:
-    print(f"❌ Pre-deployment validation failed: {str(e)}")
+    print(f"Pre-deployment validation failed: {str(e)}")
     raise RuntimeError("Model validation failed. Deployment aborted.") from e
 
 # COMMAND ----------
@@ -160,13 +160,13 @@ try:
         budget_policy_id=None,
     )
 
-    print("✅ Deployment completed successfully!")
+    print("Deployment completed successfully!")
 
 except AgentDeploymentError as e:
-    print(f"❌ Deployment failed: {str(e)}")
+    print(f"Deployment failed: {str(e)}")
     raise
 except Exception as e:
-    print(f"❌ Unexpected deployment error: {str(e)}")
+    print(f"Unexpected deployment error: {str(e)}")
     raise
 
 # COMMAND ----------
@@ -184,74 +184,6 @@ if hasattr(deployment_result, 'review_app_url'):
     print(f"Review App: {deployment_result.review_app_url}")
 
 print("="*50)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ## Setting Up Agent Monitoring
-# MAGIC
-# MAGIC Set up agent monitoring for the deployed agent
-
-# COMMAND ----------
-
-from telco_support_agent.evaluation import SCORERS, BuiltInScorerWrapper
-from telco_support_agent.ops.monitoring import (AgentMonitoringError,
-                                                setup_agent_scorers)
-from mlflow.genai.scorers import Safety
-
-if config.monitoring_enabled:
-    print("="*50)
-    print("SETTING UP AGENT MONITORING")
-    print("="*50)
-    print(f"Experiment Name: {experiment.name}")
-    print(f"Experiment ID: {experiment.experiment_id}")
-    print(f"Agent catalog: {config.uc_catalog}")
-    print(f"Agent schema: {config.agent_schema}")
-    # Adding built-in scorers.
-    builtin_scores = [BuiltInScorerWrapper("safety", 0.8, Safety())]
-    # display custom metrics
-    print("Custom Telco Assessments:")
-    for scorer in SCORERS:
-        print(f"  - Name: {scorer.name} Sample Rate: {scorer.sample_rate}")
-    print()
-    print("Built-in Assessments:")
-    for builtin_scorer in builtin_scores:
-        print(f" - Name: {builtin_scorer.scorer.name} Custom Name: {builtin_scorer.name} Sample Rate: {builtin_scorer.sample_rate}")
-
-
-    try:
-        # create monitoring with custom scorers and built-in scorers.
-        uc_config = config.to_uc_config()
-        scorers_out = setup_agent_scorers(
-            experiment_id=experiment.experiment_id,
-            replace_existing=config.monitoring_replace_existing,
-            builtin_scorers=builtin_scores,
-            custom_scorers=SCORERS,
-        )
-
-        print("✅ Monitoring created successfully!")
-        print(f"Experiment ID: {experiment.experiment_id}")
-        print(f"Monitoring scorers: {scorers_out}")
-        print(f"\nNote: Monitoring created with {len(SCORERS) + len(builtin_scores)} scorers assessments.")
-
-
-    except AgentMonitoringError as e:
-        print(f"❌ Failed to create monitoring: {str(e)}")
-        if config.monitoring_fail_on_error:
-            raise
-        else:
-            print("Continuing deployment...")
-    except Exception as e:
-        print(f"❌ Unexpected monitoring error: {str(e)}")
-        if config.monitoring_fail_on_error:
-            raise
-        else:
-            print("Continuing deployment...")
-
-    print("="*50)
-else:
-    print("Monitoring is disabled in configuration")
-    print("To enable, set monitoring_enabled: true in configuration")
 
 # COMMAND ----------
 
@@ -282,22 +214,22 @@ if config.cleanup_old_versions:
             raise_on_error=False,
         )
 
-        print("✅ Cleanup completed!")
+        print("Cleanup completed!")
         print(f"Versions kept: {cleanup_result['versions_kept']}")
         print(f"Versions deleted: {cleanup_result['versions_deleted']}")
 
         if cleanup_result['versions_failed']:
-            print(f"⚠️ Versions that failed to delete: {cleanup_result['versions_failed']}")
+            print(f"WARNING: Versions that failed to delete: {cleanup_result['versions_failed']}")
             print("These may need manual cleanup or will be retried in future deployments.")
 
         if not cleanup_result['versions_deleted'] and not cleanup_result['versions_failed']:
             print("No old versions found to clean up.")
 
     except AgentDeploymentError as e:
-        print(f"❌ Cleanup failed with error: {str(e)}")
+        print(f"Cleanup failed with error: {str(e)}")
         print("Continuing despite cleanup failure")
     except Exception as e:
-        print(f"❌ Unexpected cleanup error: {str(e)}")
+        print(f"Unexpected cleanup error: {str(e)}")
         print("Continuing despite cleanup failure")
 
     print("="*50)
@@ -360,7 +292,7 @@ for i, test_case in enumerate(test_cases, 1):
             inputs=request_data
         )
 
-        print("✅ Query successful!")
+        print("Query successful!")
 
         for output in response["output"]:
             if "content" in output:
@@ -373,6 +305,6 @@ for i, test_case in enumerate(test_cases, 1):
             print(f"Custom outputs: {response['custom_outputs']}")
 
     except Exception as e:
-        print(f"❌ Query failed: {str(e)}")
+        print(f"Query failed: {str(e)}")
 
-print("\n🎉 Custom inputs endpoint testing completed!")
+print("\nCustom inputs endpoint testing completed!")

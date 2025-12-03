@@ -40,7 +40,7 @@ print("\nFunction initialization status:")
 for domain, functions in results.items():
     print(f"\nDomain: {domain}")
     for func_name, status in functions.items():
-        status_str = "✅ Available" if status else "❌ Unavailable"
+        status_str = "Available" if status else "Unavailable"
         print(f"  - {func_name}: {status_str}")
 
 if any(not all(functions.values()) for functions in results.values()):

@@ -26,13 +26,13 @@ async def demo_homepage(request):
     <body>
         <div class="container">
             <div class="header">
-                <h1>🏢 Telco Operations MCP Server</h1>
+                <h1>Telco Operations MCP Server</h1>
                 <p>Network Operations Team's Established Tools</p>
-                <div class="status running">✅ Server Status: RUNNING</div>
+                <div class="status running">Server Status: RUNNING</div>
             </div>
 
             <div class="tool-section">
-                <h2>🔧 Available MCP Tools</h2>
+                <h2>Available MCP Tools</h2>
                 <button id="btn-list-tools" class="button">List All Tools</button>
                 <div id="tools-response" class="response-box" style="display:none;"></div>
             </div>
@@ -42,7 +42,7 @@ async def demo_homepage(request):
             async function listTools() {
               const div = document.getElementById('tools-response');
               div.style.display = 'block';
-              div.innerHTML = '<div class="loading">🔄 Fetching available tools...</div>';
+              div.innerHTML = '<div class="loading">Fetching available tools...</div>';
 
               try {
                 const response = await fetch(`/mcp`, {

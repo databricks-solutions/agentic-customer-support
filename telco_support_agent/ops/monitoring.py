@@ -1,12 +1,11 @@
-"""Monitoring utils for deployed agents."""
-
-from typing import Optional
+"""Production monitoring setup for deployed agents."""
 
 from mlflow.genai.scorers import ScorerSamplingConfig, delete_scorer, list_scorers
 
-from telco_support_agent.evaluation.scorers.base_scorer import (
-    BaseScorer,
-    BuiltInScorerWrapper,
+from telco_support_agent.evaluation import (
+    REGISTERABLE_SCORERS,
+    SCORER_CONFIGS,
+    SCORERS,
 )
 from telco_support_agent.utils.logging_utils import get_logger
 
@@ -19,94 +18,75 @@ class AgentMonitoringError(Exception):
     pass
 
 
-def setup_agent_scorers(
+def setup_production_monitoring(
     experiment_id: str,
     replace_existing: bool = True,
-    builtin_scorers: Optional[list[BuiltInScorerWrapper]] = None,
-    custom_scorers: Optional[list[BaseScorer]] = None,
-) -> any:
-    """Set up a set of scorers for the deployed agent with custom scorers and built-in scorers.
+) -> list:
+    """Set up production monitoring by registering and starting scorers.
+
+    Registers all make_judge and code-based scorers. Predefined scorers (Safety,
+    RelevanceToQuery) are used directly without registration.
 
     Args:
-        experiment_id: MLflow experiment ID.
-        replace_existing: Whether to replace the existing scorers.
-        builtin_scorers: List of built-in scorers to use.
-        custom_scorers: List of custom scorer functions to use
+        experiment_id: MLflow experiment ID for the deployed agent.
+        replace_existing: Whether to delete and recreate existing scorers.
 
     Returns:
-        Created custom scorers.
+        List of registered and started scorer instances.
 
     Raises:
-        AgentMonitoringError: If the scorer's creation fails
+        AgentMonitoringError: If scorer setup fails.
     """
     try:
+        # Delete existing scorers if replacing
         if replace_existing:
             try:
-                actual_scorers = list_scorers(experiment_id=experiment_id)
+                existing_scorers = list_scorers(experiment_id=experiment_id)
                 logger.info(
-                    f"Found existing scorers: {actual_scorers} for experiment: {experiment_id}"
+                    f"Found {len(existing_scorers)} existing scorers for experiment: {experiment_id}"
                 )
                 logger.info("Deleting existing scorers for replacement...")
-                for scorer in actual_scorers:
+                for scorer in existing_scorers:
                     delete_scorer(name=scorer.name)
+                    logger.info(f"Deleted scorer: {scorer.name}")
             except ValueError:
                 logger.info(
                     f"No existing scorers found for experiment: {experiment_id}"
                 )
 
-        logger.info(f"Creating scorers for experiment: {experiment_id}")
+        # Register and start scorers
+        registered_scorers = []
 
-        scorers_result = []
+        logger.info(
+            f"Total scorers: {len(SCORERS)} (registering {len(REGISTERABLE_SCORERS)})"
+        )
 
-        all_scores = builtin_scorers + custom_scorers
+        for scorer in REGISTERABLE_SCORERS:
+            scorer_name = scorer.name
+            config = SCORER_CONFIGS.get(scorer_name, {"sample_rate": 1.0})
+            sample_rate = config["sample_rate"]
 
-        if all_scores:
-            scorers_mapping = {
-                scorer.name: scorer
-                for scorer in list_scorers(experiment_id=experiment_id)
-            }
-            logger.info("Adding custom and built-in scorers to experiment.")
-            for scorer in all_scores:
-                created_scorer = create_scorer(
-                    scorer=scorer, scorers_mapping=scorers_mapping
-                )
-                scorers_result.append(created_scorer)
+            logger.info(f"Registering scorer: {scorer_name}")
 
-        logger.info(f"Experiment configured with {len(all_scores)} scorers.")
+            # Register scorer
+            registered = scorer.register(name=scorer_name)
 
-        return scorers_result
+            # Start monitoring with sampling config
+            started = registered.start(
+                sampling_config=ScorerSamplingConfig(sample_rate=sample_rate)
+            )
+
+            registered_scorers.append(started)
+            logger.info(
+                f"Scorer {scorer_name} monitoring active (sample_rate={sample_rate})"
+            )
+
+        logger.info(
+            f"Production monitoring setup complete: {len(registered_scorers)} scorers registered"
+        )
+        return registered_scorers
 
     except Exception as e:
-        error_msg = f"Failed to setup experiment scorers: {str(e)}"
+        error_msg = f"Failed to setup production monitoring: {str(e)}"
         logger.error(error_msg)
         raise AgentMonitoringError(error_msg) from e
-
-
-def create_scorer(scorer, scorers_mapping):
-    """Function to create a new scorer.
-
-    Args:
-        scorer: BaseScorer or BuiltInScorerWrapper object with scorer function and metadata.
-        scorers_mapping: Dict with pre-existing scorers on the experiment.
-
-    Returns:
-        Created scorer.
-    """
-    if isinstance(scorer, BaseScorer):
-        scorer_fn = scorer.get_online_scorer()
-    else:
-        scorer_fn = scorer.scorer
-
-    scorer_name = scorer.name
-    sample_rate = scorer.sample_rate
-
-    if scorer_name in scorers_mapping:
-        # Scorer already exists. Remove and create a scorer.
-        # Doing this in case the scorer code changed.
-        delete_scorer(name=scorer_name)
-    created_scorer = scorer_fn.register(name=scorer_name)
-    created_scorer.start(sampling_config=ScorerSamplingConfig(sample_rate=sample_rate))
-    logger.info(
-        f"Adding scorer: {scorer_name} to experiment with sample rate: {sample_rate}."
-    )
-    return created_scorer
