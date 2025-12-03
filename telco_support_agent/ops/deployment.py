@@ -79,23 +79,6 @@ def deploy_agent(
         # deploy agent
         logger.info("Starting deployment...")
 
-        # Check if endpoint exists to determine if we should pass tags
-        w = WorkspaceClient()
-        endpoint_exists = False
-        try:
-            w.serving_endpoints.get(deployment_name)
-            endpoint_exists = True
-            logger.info(f"Endpoint {deployment_name} exists, updating...")
-        except Exception as e:
-            # Endpoint doesn't exist if we get a ResourceDoesNotExist or similar error
-            if "does not exist" in str(e).lower() or "not found" in str(e).lower():
-                logger.info(f"Endpoint {deployment_name} does not exist, will create new...")
-            else:
-                # Re-raise if it's a different error
-                raise
-
-        # Deploy without tags to avoid duplicate key errors
-        # Tags can be managed separately via the Databricks UI or API if needed
         deployment = agents.deploy(
             model_name=uc_model_name,
             model_version=model_version,
