@@ -21,13 +21,21 @@
 
 # COMMAND ----------
 
+dbutils.widgets.text("root_path", "")
 dbutils.widgets.text("experiment_name", "/Shared/telco_support_agent/dev/dev_telco_support_agent")
 dbutils.widgets.text("env", "dev")
 dbutils.widgets.dropdown("replace_existing", "true", ["true", "false"])
 
 # COMMAND ----------
 
+import sys
+
 import mlflow
+
+if root_path := dbutils.widgets.get("root_path"):
+    sys.path.append(root_path)
+
+# COMMAND ----------
 
 from telco_support_agent.evaluation import SCORER_CONFIGS, SCORERS
 from telco_support_agent.ops.monitoring import setup_production_monitoring

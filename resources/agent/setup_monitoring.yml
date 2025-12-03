@@ -14,6 +14,7 @@ resources:
           notebook_task:
             notebook_path: ../../notebooks/06_monitoring/setup_monitoring.py
             base_parameters:
+              root_path: ${workspace.root_path}/files
               experiment_name: ${var.experiment_name}
               env: ${bundle.target}
               replace_existing: "true"
