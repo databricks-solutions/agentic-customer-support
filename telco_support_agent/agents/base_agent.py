@@ -413,8 +413,45 @@ class BaseAgent(ResponsesAgent, abc.ABC):
                     result = self.vector_search_tools[tool_name].execute(**args)
                 else:
                     uc_function_name = tool_name.replace("__", ".")
+                    # Convert None values and string null representations to SQL NULL by omitting them
+                    cleaned_args = {}
+                    for k, v in args.items():
+                        # Skip None values and string representations of null/empty
+                        if v is None:
+                            continue
+                        if isinstance(v, str) and v.lower() in ("null", "none", ""):
+                            continue
+
+                        # Convert numeric values appropriately for UC functions
+                        if isinstance(v, int | float):
+                            # For parameters that should be DOUBLE, always use float
+                            if k.endswith(("_input", "_amount", "_charge", "_value")):
+                                cleaned_args[k] = float(v)
+                            else:
+                                cleaned_args[k] = v
+                        elif (
+                            isinstance(v, str)
+                            and v.replace(".", "").replace("-", "").isdigit()
+                        ):
+                            try:
+                                # For DOUBLE parameters, always convert to float
+                                if k.endswith(
+                                    ("_input", "_amount", "_charge", "_value")
+                                ):
+                                    cleaned_args[k] = float(v)
+                                else:
+                                    cleaned_args[k] = float(v) if "." in v else int(v)
+                            except ValueError:
+                                cleaned_args[k] = (
+                                    v  # Keep as string if conversion fails
+                                )
+                        else:
+                            cleaned_args[k] = v
+                    logger.debug(
+                        f"UC function {uc_function_name}: original args {args}, cleaned args {cleaned_args}"
+                    )
                     result = self.uc_client.execute_function(
-                        function_name=uc_function_name, parameters=args
+                        function_name=uc_function_name, parameters=cleaned_args
                     ).value
 
                 span.set_outputs(result)

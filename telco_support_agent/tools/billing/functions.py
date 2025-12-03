@@ -23,9 +23,9 @@ def register_get_billing_info(uc_config: UCConfig):
           customer STRING COMMENT 'The customer ID in the format CUS-XXXXX',
           billing_start_date_input STRING COMMENT 'The billing start date in YYYY-MM-DD format. Defaults to first day of current month.',
           billing_end_date_input STRING COMMENT 'The billing end date in YYYY-MM-DD format. Defaults to first day of next month.',
-          additional_charges_input DOUBLE COMMENT 'Filter on additional_charges. Must be non negative. If 0, only rows with non-NULL additional_charges are included. Can be NULL to skip filtering.',
-          total_amount_input DOUBLE COMMENT 'Filter on total_amount. Must be non negative. If 0, only rows with non-NULL total_amount are included. Can be NULL to skip filtering.',
-          status_input STRING COMMENT 'Billing status. Possible values: Paid, Unpaid, Late, Partial, All. Defaults to All. If All, return rows of all statuses.'
+          additional_charges_input DOUBLE DEFAULT NULL COMMENT 'Filter on additional_charges. Must be non negative. If 0, only rows with non-NULL additional_charges are included. Can be NULL to skip filtering.',
+          total_amount_input DOUBLE DEFAULT NULL COMMENT 'Filter on total_amount. Must be non negative. If 0, only rows with non-NULL total_amount are included. Can be NULL to skip filtering.',
+          status_input STRING DEFAULT 'All' COMMENT 'Billing status. Possible values: Paid, Unpaid, Late, Partial, All. Defaults to All. If All, return rows of all statuses.'
         )
         RETURNS STRING
         COMMENT 'Retrieves all columns of the billing table for all rows for a customer within the specified date range, with optional filters for additional_charges, total_amount, and status. Example usage: SELECT {function_name}("CUS-10601","2025-06-01","2025-06-01",NULL,NULL,"Paid")'
