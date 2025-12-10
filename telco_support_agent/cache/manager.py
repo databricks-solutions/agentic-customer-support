@@ -49,32 +49,24 @@ class CacheManager:
             logger.warning(f"Cache index not yet available: {e}")
             self.cache_index = None
 
-    def format_cache_content(
-        self, query: str, agent_type: str, customer_segment: str
-    ) -> str:
-        """Format content for embedding with context.
+    def format_cache_content(self, query: str) -> str:
+        """Format content for embedding.
 
         Args:
             query: User query text
-            agent_type: Type of agent handling the query
-            customer_segment: Customer segment
 
         Returns:
-            Formatted string combining query with context
+            Formatted string for cache lookup
         """
-        return f"Query: {query}\nAgent: {agent_type}\nSegment: {customer_segment}"
+        return f"Query: {query}"
 
-    def get_cache(
-        self, query: str, agent_type: str, customer_segment: str
-    ) -> Optional[str]:
+    def get_cache(self, query: str) -> Optional[str]:
         """Search cache for matching response using vector similarity.
 
         If a match is found, updates hit_count and last_hit_time.
 
         Args:
             query: User query text
-            agent_type: Type of agent handling the query
-            customer_segment: Customer segment
 
         Returns:
             Cached response if found, None otherwise
@@ -84,9 +76,7 @@ class CacheManager:
             return None
 
         try:
-            formatted_query = self.format_cache_content(
-                query, agent_type, customer_segment
-            )
+            formatted_query = self.format_cache_content(query)
 
             results = self.cache_index.similarity_search(
                 query_text=formatted_query,
@@ -132,16 +122,12 @@ class CacheManager:
         except Exception as e:
             logger.error(f"Error updating cache hit count: {e}")
 
-    def put_cache(
-        self, query: str, response: str, agent_type: str, customer_segment: str
-    ) -> None:
+    def put_cache(self, query: str, response: str) -> None:
         """Write cache entry to Delta table.
 
         Args:
             query: User query text
-            response: Agent response
-            agent_type: Type of agent that handled the query
-            customer_segment: Customer segment
+            response: Cached response (e.g., agent_type for routing)
         """
         try:
             now = datetime.now()
@@ -150,11 +136,9 @@ class CacheManager:
                 cache_id=str(uuid.uuid4()),
                 query=query,
                 response=response,
-                agent_type=agent_type,
-                customer_segment=customer_segment,
-                formatted_content=self.format_cache_content(
-                    query, agent_type, customer_segment
-                ),
+                agent_type="supervisor",  # Fixed for routing cache
+                customer_segment="routing",  # Fixed for routing cache
+                formatted_content=self.format_cache_content(query),
                 hit_count=0,
                 last_hit_time=now,
                 created_time=now,
@@ -168,22 +152,18 @@ class CacheManager:
         except Exception as e:
             logger.error(f"Error writing to cache: {e}")
 
-    def add_to_cache_async(
-        self, query: str, response: str, agent_type: str, customer_segment: str
-    ) -> None:
+    def add_to_cache_async(self, query: str, response: str) -> None:
         """Write cache entry asynchronously in background thread.
 
         This method returns immediately and writes the cache entry in a daemon thread.
 
         Args:
             query: User query text
-            response: Agent response
-            agent_type: Type of agent that handled the query
-            customer_segment: Customer segment
+            response: Cached response (e.g., agent_type for routing)
         """
         thread = threading.Thread(
             target=self.put_cache,
-            args=(query, response, agent_type, customer_segment),
+            args=(query, response),
             daemon=True,
         )
         thread.start()

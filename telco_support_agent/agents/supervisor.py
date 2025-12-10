@@ -26,6 +26,7 @@ from telco_support_agent.agents.utils.topic_utils import (
     load_topics_from_yaml,
     topic_classification,
 )
+from telco_support_agent.cache import CacheManager
 from telco_support_agent.config import UCConfig
 from telco_support_agent.utils.logging_utils import get_logger, setup_logging
 
@@ -87,6 +88,26 @@ class SupervisorAgent(BaseAgent):
                 f"Supervisor configured with disabled tools: {self.disable_tools}"
             )
 
+        # Initialize routing cache from config
+        cache_config = self.config.cache
+        if cache_config and cache_config.enabled:
+            try:
+                self.routing_cache = CacheManager(
+                    uc_config=self.config.uc_config,
+                    cache_index_name="agent_cache_index",
+                    cache_table_name="agent_cache",
+                    similarity_threshold=cache_config.similarity_threshold,
+                )
+                logger.info(
+                    f"Routing cache enabled (similarity_threshold={cache_config.similarity_threshold})"
+                )
+            except Exception as e:
+                logger.warning(f"Failed to initialize routing cache: {e}")
+                self.routing_cache = None
+        else:
+            self.routing_cache = None
+            logger.info("Routing cache disabled")
+
     def get_description(self) -> str:
         """Return a description of this agent."""
         return "Supervisor agent that routes customer queries to specialized sub-agents"
@@ -141,15 +162,34 @@ class SupervisorAgent(BaseAgent):
             return None
 
     @mlflow.trace(span_type=SpanType.AGENT)
-    def route_query(self, query: str) -> AgentType:
+    def route_query(self, query: str) -> tuple[AgentType, bool]:
         """Determine which sub-agent should handle the query.
 
         Args:
             query: User query to classify
 
         Returns:
-            The agent type that should handle this query
+            Tuple of (agent_type, cache_hit) - cache_hit is True if routing came from cache
         """
+        if self.routing_cache:
+            try:
+                cached_agent_type_str = self.routing_cache.get_cache(query=query)
+
+                if cached_agent_type_str:
+                    try:
+                        agent_type = AgentType.from_string(cached_agent_type_str)
+                        logger.info(
+                            f"Routing cache hit: {agent_type.value} agent (query: {query[:50]}...)"
+                        )
+                        return agent_type, True  # Cache hit!
+                    except ValueError:
+                        logger.warning(
+                            f"Invalid cached agent type: {cached_agent_type_str}, falling through to LLM"
+                        )
+            except Exception as e:
+                logger.warning(f"Error checking routing cache: {e}")
+
+        # Cache miss or disabled - perform LLM-based routing
         messages = [
             {"role": "system", "content": self.system_prompt},
             {"role": "user", "content": query},
@@ -162,18 +202,32 @@ class SupervisorAgent(BaseAgent):
             try:
                 agent_type = AgentType.from_string(agent_type_str)
                 logger.info(f"Routing query to {agent_type.value} agent")
-                return agent_type
+
+                # Cache the routing decision asynchronously
+                if self.routing_cache:
+                    try:
+                        self.routing_cache.add_to_cache_async(
+                            query=query,
+                            response=agent_type.value,
+                        )
+                        logger.debug(
+                            f"Cached routing decision: {agent_type.value} (query: {query[:50]}...)"
+                        )
+                    except Exception as e:
+                        logger.warning(f"Error caching routing decision: {e}")
+
+                return agent_type, False  # Cache miss
             except ValueError:
                 logger.warning(
                     f"LLM returned invalid agent type: {agent_type_str}. Falling back to account agent."
                 )
-                return AgentType.ACCOUNT
+                return AgentType.ACCOUNT, False
 
         except Exception as e:
             logger.error(
                 f"Error in routing query: {str(e)}. Falling back to account agent."
             )
-            return AgentType.ACCOUNT
+            return AgentType.ACCOUNT, False
 
     @mlflow.trace(span_type=SpanType.LLM)
     def _classify_query(self, query: str) -> dict[str, str]:
@@ -219,13 +273,14 @@ class SupervisorAgent(BaseAgent):
                 error_response=error_response,
             )
 
-        # determine which agent should handle query
-        agent_type = self.route_query(user_query)
+        # determine which agent should handle query (with caching)
+        agent_type, cache_hit = self.route_query(user_query)
 
         # prepare custom outputs with routing decision
         custom_outputs = request.custom_inputs.copy() if request.custom_inputs else {}
         custom_outputs["routing"] = {
             "agent_type": agent_type.value,
+            "cache_hit": cache_hit,  # Track if routing came from cache
         }
 
         # add disabled tools info to custom outputs
@@ -235,9 +290,13 @@ class SupervisorAgent(BaseAgent):
         # get sub-agent
         sub_agent = self._get_sub_agent(agent_type)
 
-        # classify query based on topic categories
-        classification_result = self._classify_query(user_query)
-        custom_outputs["topic"] = classification_result.get("topic")
+        # classify query based on topic categories (skip if cache hit)
+        if cache_hit:
+            logger.debug("Skipping topic classification due to routing cache hit")
+            custom_outputs["topic"] = "cached_routing"
+        else:
+            classification_result = self._classify_query(user_query)
+            custom_outputs["topic"] = classification_result.get("topic")
 
         # if sub-agent not implemented, prepare non-response
         if sub_agent is None:

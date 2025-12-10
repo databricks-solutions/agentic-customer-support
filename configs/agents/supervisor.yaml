@@ -5,6 +5,9 @@ llm:
   params:
     temperature: 0.01
     max_tokens: 1024
+cache:
+  enabled: true
+  similarity_threshold: 0.95
 system_prompt: |
   You are an intelligent AI assistant for a telecom customer support system. Your job is to analyze customer queries and route them to the appropriate specialized agent based on the query's intent, required data sources, and the specific capabilities of each agent.
 
