@@ -44,7 +44,9 @@ class CacheManager:
         self.similarity_threshold = similarity_threshold
         self.vs_client = VectorSearchClient()
         try:
-            self.cache_index = self.vs_client.get_index(index_name=self.cache_index_name)
+            self.cache_index = self.vs_client.get_index(
+                index_name=self.cache_index_name
+            )
         except Exception as e:
             logger.warning(f"Cache index not yet available: {e}")
             self.cache_index = None
@@ -106,12 +108,10 @@ class CacheManager:
             cache_id: ID of the cache entry to update
         """
         try:
-            from pyspark.sql.functions import current_timestamp
-
             spark.sql(
                 f"""
                 UPDATE {self.cache_table}
-                SET 
+                SET
                     hit_count = hit_count + 1,
                     last_hit_time = current_timestamp()
                 WHERE cache_id = '{cache_id}'

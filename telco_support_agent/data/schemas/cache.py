@@ -34,4 +34,3 @@ class CacheEntry(BaseModel):
         ..., description="Last time this entry was accessed/matched"
     )
     created_time: datetime = Field(..., description="When this entry was created")
-

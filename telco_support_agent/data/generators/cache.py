@@ -66,7 +66,7 @@ class CacheGenerator(BaseGenerator):
         # Enable Change Data Feed (required for vector index sync)
         spark.sql(
             f"""
-            ALTER TABLE {table_name} 
+            ALTER TABLE {table_name}
             SET TBLPROPERTIES (
                 'delta.enableChangeDataFeed' = 'true',
                 'delta.autoOptimize.optimizeWrite' = 'true',
@@ -78,10 +78,9 @@ class CacheGenerator(BaseGenerator):
         # Add table documentation
         spark.sql(
             f"""
-            COMMENT ON TABLE {table_name} IS 
-            'Agent routing cache for semantic similarity-based query matching. 
+            COMMENT ON TABLE {table_name} IS
+            'Agent routing cache for semantic similarity-based query matching.
             Stores routing decisions to reduce LLM calls and improve latency.
             Table starts empty and populates at runtime.'
         """
         )
-
