@@ -10,6 +10,7 @@ import pytest
 from pydantic import ValidationError
 
 from telco_support_agent.data.schemas.billing import Billing, Usage
+from telco_support_agent.data.schemas.cache import CacheEntry
 from telco_support_agent.data.schemas.customers import Customer, Subscription
 from telco_support_agent.data.schemas.knowledge_base import KnowledgeBase, SupportTicket
 from telco_support_agent.data.schemas.products import Device, Plan, Promotion
@@ -428,3 +429,119 @@ class TestKnowledgeSchemas:
                 agent_id="AGT-1234",
             )
         assert "Resolved date must be after created date" in str(exc_info.value)
+
+
+class TestCacheSchemas:
+    """Tests for cache entry schema."""
+
+    def test_valid_cache_entry(self):
+        """Test that a valid cache entry passes validation."""
+        now = datetime.now()
+        cache_entry = CacheEntry(
+            cache_id="123e4567-e89b-12d3-a456-426614174000",
+            query="What is my current bill?",
+            response="billing",
+            agent_type="supervisor",
+            customer_segment="routing",
+            formatted_content="Query: What is my current bill?",
+            hit_count=0,
+            last_hit_time=now,
+            created_time=now,
+        )
+        assert cache_entry.cache_id == "123e4567-e89b-12d3-a456-426614174000"
+        assert cache_entry.query == "What is my current bill?"
+        assert cache_entry.response == "billing"
+        assert cache_entry.agent_type == "supervisor"
+        assert cache_entry.customer_segment == "routing"
+        assert cache_entry.hit_count == 0
+
+    def test_cache_entry_with_hits(self):
+        """Test cache entry with multiple hits."""
+        now = datetime.now()
+        cache_entry = CacheEntry(
+            cache_id="123e4567-e89b-12d3-a456-426614174000",
+            query="What is my current bill?",
+            response="billing",
+            agent_type="supervisor",
+            customer_segment="routing",
+            formatted_content="Query: What is my current bill?",
+            hit_count=42,
+            last_hit_time=now,
+            created_time=now,
+        )
+        assert cache_entry.hit_count == 42
+
+    def test_cache_entry_default_hit_count(self):
+        """Test that hit_count defaults to 0."""
+        now = datetime.now()
+        cache_entry = CacheEntry(
+            cache_id="123e4567-e89b-12d3-a456-426614174000",
+            query="What is my current bill?",
+            response="billing",
+            agent_type="supervisor",
+            customer_segment="routing",
+            formatted_content="Query: What is my current bill?",
+            last_hit_time=now,
+            created_time=now,
+        )
+        assert cache_entry.hit_count == 0
+
+    def test_negative_hit_count_fails(self):
+        """Test that negative hit_count fails validation."""
+        now = datetime.now()
+        with pytest.raises(ValidationError) as exc_info:
+            CacheEntry(
+                cache_id="123e4567-e89b-12d3-a456-426614174000",
+                query="What is my current bill?",
+                response="billing",
+                agent_type="supervisor",
+                customer_segment="routing",
+                formatted_content="Query: What is my current bill?",
+                hit_count=-1,  # Invalid negative count
+                last_hit_time=now,
+                created_time=now,
+            )
+        assert "greater_than_equal" in str(exc_info.value)
+
+    def test_missing_required_fields(self):
+        """Test that missing required fields fail validation."""
+        now = datetime.now()
+        with pytest.raises(ValidationError) as exc_info:
+            CacheEntry(
+                cache_id="123e4567-e89b-12d3-a456-426614174000",
+                query="What is my current bill?",
+                # Missing response
+                agent_type="supervisor",
+                customer_segment="routing",
+                formatted_content="Query: What is my current bill?",
+                hit_count=0,
+                last_hit_time=now,
+                created_time=now,
+            )
+        assert "response" in str(exc_info.value).lower()
+        assert "field required" in str(exc_info.value).lower()
+
+    def test_cache_entry_serialization(self):
+        """Test that cache entry can be serialized to dict for Spark."""
+        now = datetime.now()
+        cache_entry = CacheEntry(
+            cache_id="123e4567-e89b-12d3-a456-426614174000",
+            query="What is my current bill?",
+            response="billing",
+            agent_type="supervisor",
+            customer_segment="routing",
+            formatted_content="Query: What is my current bill?",
+            hit_count=5,
+            last_hit_time=now,
+            created_time=now,
+        )
+
+        # Test model_dump() for Spark DataFrame creation
+        data_dict = cache_entry.model_dump()
+        assert isinstance(data_dict, dict)
+        assert data_dict["cache_id"] == "123e4567-e89b-12d3-a456-426614174000"
+        assert data_dict["query"] == "What is my current bill?"
+        assert data_dict["response"] == "billing"
+        assert data_dict["hit_count"] == 5
+        assert isinstance(data_dict["last_hit_time"], datetime)
+        assert isinstance(data_dict["created_time"], datetime)
