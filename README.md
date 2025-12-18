@@ -9,6 +9,7 @@ This project implements a multi-agent system that processes telecom customer sup
 ## Features
 
 - Multi-agent supervisor orchestrating specialized sub-agents
+- Routing cache with similarity-based lookup to reduce LLM calls
 - Vector Search for unstructured data retrieval
 - Tool-calling agents for structured data retrieval
 - Agent lifecycle tracked using MLflow and Unity Catalog
@@ -20,7 +21,7 @@ This project implements a multi-agent system that processes telecom customer sup
 ```
 agentic-customer-support/
 ├── README.md
-├── pyproject.toml           # uv for dependency management 
+├── pyproject.toml           # uv for dependency management
 ├── uv.lock                  # uv lock file
 ├── requirements.txt         # Dependencies for notebook installation
 ├── .pre-commit-config.yaml  # Pre-commit hooks configuration
@@ -39,10 +40,10 @@ agentic-customer-support/
 │   └── workflows/
 │       ├── pr-validation.yml           # PR validation
 │       ├── dev-deploy-resources.yml    # Dev deployment
-│       ├── staging-deploy-resources.yml # Staging deployment  
+│       ├── staging-deploy-resources.yml # Staging deployment
 │       └── prod-deploy-resources.yml   # Production deployment
 │
-├── telco_support_agent/    
+├── telco_support_agent/
 │   ├── __init__.py
 │   ├── config/              # Config management
 │   │
@@ -53,6 +54,9 @@ agentic-customer-support/
 │   │   ├── billing.py       # Billing agent
 │   │   ├── tech_support.py  # Tech support agent
 │   │   └── product.py       # Product info agent
+│   │
+│   ├── cache/               # Routing cache management
+│   │   └── manager.py       # Cache manager with similarity-based lookup
 │   │
 │   ├── tools/               # Agent tools
 │   │
