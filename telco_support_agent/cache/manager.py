@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Optional
 
 from databricks.vector_search.client import VectorSearchClient
+from pyspark.sql import functions as F
 
 from telco_support_agent.config import UCConfig
 from telco_support_agent.data.schemas.cache import CacheEntry
@@ -28,7 +29,7 @@ class CacheManager:
         uc_config: UCConfig,
         cache_index_name: str = "agent_cache_index",
         cache_table_name: str = "agent_cache",
-        similarity_threshold: float = 0.95,
+        similarity_threshold: float = 0.8,
     ):
         """Initialize the cache manager.
 
@@ -65,13 +66,14 @@ class CacheManager:
     def get_cache(self, query: str) -> Optional[str]:
         """Search cache for matching response using vector similarity.
 
+        Only returns cached response if similarity score meets or exceeds threshold.
         If a match is found, updates hit_count and last_hit_time.
 
         Args:
             query: User query text
 
         Returns:
-            Cached response if found, None otherwise
+            Cached response if found with sufficient similarity, None otherwise
         """
         if not self.cache_index:
             logger.debug("Cache index not available, skipping cache lookup")
@@ -84,17 +86,37 @@ class CacheManager:
                 query_text=formatted_query,
                 columns=["cache_id", "response", "query"],
                 num_results=1,
+                query_type="ANN",
+                reranker=None,
             )
-
             docs = results.get("result", {}).get("data_array", [])
+
             if docs and len(docs) > 0:
+                # Vector search returns: [cache_id, response, query, score]
                 cache_id = docs[0][0]
                 response = docs[0][1]
-                self._update_cache_hit(cache_id)
+                cached_query = docs[0][2]
+                similarity_score = docs[0][3] if len(docs[0]) > 3 else 0.0
 
-                return response
+                logger.info(
+                    f"Cache candidate found: '{cached_query}' "
+                    f"(score: {similarity_score:.4f}, threshold: {self.similarity_threshold})"
+                )
 
-            logger.debug("Cache miss")
+                # Check if similarity score meets threshold
+                if similarity_score >= self.similarity_threshold:
+                    logger.info(
+                        f"Cache hit! Score {similarity_score:.4f} >= threshold {self.similarity_threshold}"
+                    )
+                    self._update_cache_hit(cache_id)
+                    return response
+                else:
+                    logger.info(
+                        f"Cache miss: Score {similarity_score:.4f} below threshold {self.similarity_threshold}"
+                    )
+                    return None
+
+            logger.debug("Cache miss: No results found")
             return None
 
         except Exception as e:
@@ -145,6 +167,7 @@ class CacheManager:
             )
 
             df = spark.createDataFrame([cache_entry.model_dump()])
+            df = df.withColumn("hit_count", F.col("hit_count").cast("int"))
             df.write.format("delta").mode("append").saveAsTable(self.cache_table)
 
             logger.info(f"Added cache entry: {cache_entry.cache_id}")

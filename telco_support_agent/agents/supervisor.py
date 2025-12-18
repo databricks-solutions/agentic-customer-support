@@ -181,7 +181,7 @@ class SupervisorAgent(BaseAgent):
                         logger.info(
                             f"Routing cache hit: {agent_type.value} agent (query: {query[:50]}...)"
                         )
-                        return agent_type, True  # Cache hit!
+                        return agent_type, True
                     except ValueError:
                         logger.warning(
                             f"Invalid cached agent type: {cached_agent_type_str}, falling through to LLM"
@@ -216,7 +216,7 @@ class SupervisorAgent(BaseAgent):
                     except Exception as e:
                         logger.warning(f"Error caching routing decision: {e}")
 
-                return agent_type, False  # Cache miss
+                return agent_type, False
             except ValueError:
                 logger.warning(
                     f"LLM returned invalid agent type: {agent_type_str}. Falling back to account agent."

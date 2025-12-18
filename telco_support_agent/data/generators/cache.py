@@ -27,7 +27,8 @@ class CacheGenerator(BaseGenerator):
         """
         super().__init__(config)
 
-    def get_cache_schema(self) -> StructType:
+    @property
+    def _get_cache_schema(self) -> StructType:
         """Get the schema for the cache table.
 
         Returns:
@@ -57,12 +58,10 @@ class CacheGenerator(BaseGenerator):
             table_name: Full table name (catalog.schema.table)
         """
         # Create empty DataFrame with cache schema
-        cache_schema = self.get_cache_schema()
+        cache_schema = self._get_cache_schema
         empty_df = spark.createDataFrame([], cache_schema)
-
         # Save to Delta table
         self.save_to_delta(empty_df, table_name, mode="overwrite")
-
         # Enable Change Data Feed (required for vector index sync)
         spark.sql(
             f"""

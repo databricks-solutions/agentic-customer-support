@@ -17,14 +17,20 @@ class LLMConfig(BaseModel):
 class UCConfig(BaseModel):
     """Unity Catalog configuration with separation of data reading vs agent artifacts."""
 
-    # For reading data (customer info, billing, etc.) - always prod
-    data_catalog: str = "telco_customer_support_prod"
+    # For reading data (customer info, billing, etc.)
+    data_catalog: str = (
+        "telco_customer_support_test_xabi_dev"  # Updated for new workspace
+    )
     data_schema: str = "gold"
 
     # For agent artifacts (functions, models) - environment specific
-    agent_catalog: str = "telco_customer_support_prod"  # Default to prod for testing
+    agent_catalog: str = (
+        "telco_customer_support_test_xabi_dev"  # Updated for new workspace
+    )
     agent_schema: str = "agent"
-    model_name: str = "telco_customer_support_agent"
+    model_name: str = (
+        "telco_customer_support_agent_test_xabi"  # Updated for new workspace
+    )
 
     def get_uc_function_name(self, function_name: str) -> str:
         """Returns full UC function name (uses agent catalog)."""
@@ -86,7 +92,7 @@ class CacheConfig(BaseModel):
 
     enabled: bool = Field(default=False, description="Enable caching for this agent")
     similarity_threshold: float = Field(
-        default=0.95,
+        default=0.8,
         ge=0.0,
         le=1.0,
         description="Similarity threshold for cache hits (0.0-1.0)",

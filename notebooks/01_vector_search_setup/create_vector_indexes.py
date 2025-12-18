@@ -56,7 +56,7 @@ setup_logging()
 uc_catalog = dbutils.widgets.get("uc_catalog")
 data_schema = dbutils.widgets.get("data_schema")
 vector_search_endpoint_name = dbutils.widgets.get("vector_search_endpoint_name")
-
+spark.sql(f"USE CATALOG {uc_catalog}")
 config_path = str(Path(root_path) / "configs" / "data" / "create_vector_indexes.yaml")
 print(f"Config path: {config_path}")
 
@@ -67,7 +67,7 @@ uc_config = UCConfig(
 )
 
 vs_manager = VectorSearchManager(
-    config_path=config_path, 
+    config_path=config_path,
     uc_config=uc_config,
     endpoint_name=vector_search_endpoint_name
 )
@@ -79,6 +79,7 @@ print(f"   Data Schema: {data_schema}")
 print(f"   Vector Search Endpoint: {vector_search_endpoint_name}")
 print(f"   Knowledge Base: {vs_manager.kb_table} -> {vs_manager.kb_index_name}")
 print(f"   Support Tickets: {vs_manager.tickets_table} -> {vs_manager.tickets_index_name}")
+print(f"   Cache: {vs_manager.cache_table} -> {vs_manager.cache_index_name}")
 
 # COMMAND ----------
 
@@ -177,5 +178,3 @@ for i, result in enumerate(data_array[:3]):
     print(f"  {i+1}. {result[0]} - {result[1]} ({result[2]}, {result[3]})")
 
 # COMMAND ----------
-
-

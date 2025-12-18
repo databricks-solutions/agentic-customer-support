@@ -45,6 +45,12 @@ class VectorSearchManager:
         )
         self.endpoint_name = endpoint_name
 
+        # Set Spark session to use Unity Catalog as default
+        spark.catalog.setCurrentCatalog(self.uc_config.data_catalog)
+        spark.catalog.setCurrentDatabase(self.uc_config.data_schema)
+        logger.info(f"Set Spark default catalog to: {self.uc_config.data_catalog}")
+        logger.info(f"Set Spark default schema to: {self.uc_config.data_schema}")
+
         self._setup_names()
 
         logger.info("Vector search manager initialized")
@@ -182,6 +188,26 @@ class VectorSearchManager:
             logger.error(f"Error accessing support tickets table: {e}")
             results["support_tickets"] = {
                 "table_name": self.tickets_table,
+                "exists": False,
+                "error": str(e),
+            }
+
+        try:
+            cache_df = spark.table(self.cache_table)
+            row_count = cache_df.count()
+            logger.info(f"Cache table exists: {self.cache_table}")
+            logger.info(f"   Row count: {row_count}")
+
+            results["cache"] = {
+                "table_name": self.cache_table,
+                "exists": True,
+                "row_count": row_count,
+                "schema": cache_df.schema,
+            }
+        except Exception as e:
+            logger.error(f"Error accessing cache table: {e}")
+            results["cache"] = {
+                "table_name": self.cache_table,
                 "exists": False,
                 "error": str(e),
             }
@@ -361,7 +387,7 @@ class VectorSearchManager:
 
                 logger.info(f"   Current state: {state}")
 
-                if state == "ONLINE":
+                if state == "ONLINE" or state == "ONLINE_NO_PENDING_UPDATE":
                     logger.info(f"{index_name} is ONLINE and ready!")
                     break
                 elif state in ["FAILED", "CANCELLED"]:
@@ -465,6 +491,25 @@ class VectorSearchManager:
                 "error": str(e),
             }
 
+        try:
+            cache_index = self.client.get_index(index_name=self.cache_index_name)
+            cache_status = cache_index.describe()
+            summary["cache"] = {
+                "name": self.cache_index_name,
+                "state": cache_status.get("status", {}).get(
+                    "detailed_state", "Unknown"
+                ),
+                "index_type": cache_status.get("index_type", "Unknown"),
+                "endpoint": cache_status.get("endpoint_name", "Unknown"),
+                "exists": True,
+            }
+        except Exception as e:
+            summary["cache"] = {
+                "name": self.cache_index_name,
+                "exists": False,
+                "error": str(e),
+            }
+
         return summary
 
     def setup_all_indexes(self) -> dict[str, VectorSearchIndex]:
@@ -488,6 +533,8 @@ class VectorSearchManager:
             raise RuntimeError(
                 f"Support tickets table does not exist: {self.tickets_table}"
             )
+        if not table_status["cache"]["exists"]:
+            raise RuntimeError(f"Cache table does not exist: {self.cache_table}")
 
         # Step 3: Create indexes
         kb_index = self.create_knowledge_base_index()
