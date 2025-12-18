@@ -54,6 +54,27 @@ indexes:
       - iPhone setup failed
       - can't make calls
 
+  cache:
+    name: agent_cache_index
+    source_table: agent_cache
+    pipeline_type: TRIGGERED
+    primary_key: cache_id
+    embedding_source_column: formatted_content
+    description: Vector search index for caching agent responses
+    columns_to_sync:
+      - cache_id
+      - query
+      - response
+      - agent_type
+      - customer_segment
+      - hit_count
+      - last_hit_time
+      - created_time
+    test_queries:
+      - how do I change my billing address
+      - internet is not working
+      - cancel my subscription
+
 # timeouts (in minutes)
 timeouts:
   endpoint_creation: 10
