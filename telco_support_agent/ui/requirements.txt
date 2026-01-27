@@ -16,7 +16,7 @@ structlog==23.2.0
 databricks-sdk
 
 # MLflow
-mlflow
+mlflow==3.9.0rc0
 
 # dbdemos tracking
 dbdemos_tracker

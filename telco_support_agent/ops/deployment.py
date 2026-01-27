@@ -33,7 +33,6 @@ def deploy_agent(
     wait_for_ready: bool = True,
     permissions: Optional[dict] = None,
     instructions: Optional[str] = None,
-    budget_policy_id: Optional[str] = None,
 ) -> Any:
     """Deploy a registered agent model to a Model Serving endpoint.
 
@@ -48,7 +47,6 @@ def deploy_agent(
         wait_for_ready: Whether to wait for deployment to be ready
         permissions: Optional permissions configuration dict with 'users' and 'permission_level'
         instructions: Optional review instructions for the Review App
-        budget_policy_id: Optional budget policy ID
 
     Returns:
         Deployment object with information about the deployed agent
@@ -79,15 +77,16 @@ def deploy_agent(
         # deploy agent
         logger.info("Starting deployment...")
 
-        deployment = agents.deploy(
-            model_name=uc_model_name,
-            model_version=model_version,
-            endpoint_name=deployment_name,
-            scale_to_zero=scale_to_zero_enabled,
-            environment_vars=environment_vars,
-            workload_size=workload_size,
-            budget_policy_id=budget_policy_id,
-        )
+        deploy_kwargs = {
+            "model_name": uc_model_name,
+            "model_version": model_version,
+            "endpoint_name": deployment_name,
+            "scale_to_zero": scale_to_zero_enabled,
+            "environment_vars": environment_vars,
+            "workload_size": workload_size,
+        }
+
+        deployment = agents.deploy(**deploy_kwargs)
 
         logger.info(
             f"Agent deployment started. Endpoint name: {deployment.endpoint_name}"
