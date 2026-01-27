@@ -33,7 +33,6 @@ def deploy_agent(
     wait_for_ready: bool = True,
     permissions: Optional[dict] = None,
     instructions: Optional[str] = None,
-    budget_policy_id: Optional[str] = None,
 ) -> Any:
     """Deploy a registered agent model to a Model Serving endpoint.
 
@@ -87,10 +86,7 @@ def deploy_agent(
             "environment_vars": environment_vars,
             "workload_size": workload_size,
         }
-        # Only include budget_policy_id if explicitly set
-        if budget_policy_id is not None:
-            deploy_kwargs["budget_policy_id"] = budget_policy_id
-
+        
         deployment = agents.deploy(**deploy_kwargs)
 
         logger.info(
