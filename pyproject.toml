@@ -15,7 +15,7 @@ dependencies = [
     "six==1.16.0",
     "unitycatalog-ai[databricks]>=0.3.2,<0.4",
     "unitycatalog-openai[Databricks]>=0.2.0,<0.3",
-    "databricks-agents>=1.8.2,<2",
+    "databricks-agents==1.9.3",
     "databricks-vectorsearch>=0.62.0,<0.63",
     "databricks-openai==0.6.1",
     "databricks-mcp==0.4.0",
