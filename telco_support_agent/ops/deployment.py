@@ -47,7 +47,6 @@ def deploy_agent(
         wait_for_ready: Whether to wait for deployment to be ready
         permissions: Optional permissions configuration dict with 'users' and 'permission_level'
         instructions: Optional review instructions for the Review App
-        budget_policy_id: Optional budget policy ID
 
     Returns:
         Deployment object with information about the deployed agent
@@ -86,7 +85,7 @@ def deploy_agent(
             "environment_vars": environment_vars,
             "workload_size": workload_size,
         }
-        
+
         deployment = agents.deploy(**deploy_kwargs)
 
         logger.info(
