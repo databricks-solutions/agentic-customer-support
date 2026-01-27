@@ -79,15 +79,19 @@ def deploy_agent(
         # deploy agent
         logger.info("Starting deployment...")
 
-        deployment = agents.deploy(
-            model_name=uc_model_name,
-            model_version=model_version,
-            endpoint_name=deployment_name,
-            scale_to_zero=scale_to_zero_enabled,
-            environment_vars=environment_vars,
-            workload_size=workload_size,
-            budget_policy_id=budget_policy_id,
-        )
+        deploy_kwargs = {
+            "model_name": uc_model_name,
+            "model_version": model_version,
+            "endpoint_name": deployment_name,
+            "scale_to_zero": scale_to_zero_enabled,
+            "environment_vars": environment_vars,
+            "workload_size": workload_size,
+        }
+        # Only include budget_policy_id if explicitly set
+        if budget_policy_id is not None:
+            deploy_kwargs["budget_policy_id"] = budget_policy_id
+
+        deployment = agents.deploy(**deploy_kwargs)
 
         logger.info(
             f"Agent deployment started. Endpoint name: {deployment.endpoint_name}"

@@ -157,7 +157,6 @@ try:
         wait_for_ready=config.wait_for_ready,
         permissions=config.permissions,
         instructions=config.instructions,
-        budget_policy_id=None,
     )
 
     print("Deployment completed successfully!")
