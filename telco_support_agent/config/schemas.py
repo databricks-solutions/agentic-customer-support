@@ -42,6 +42,10 @@ class UCConfig(BaseModel):
         """Returns full UC model name (uses agent catalog)."""
         return f"{self.agent_catalog}.{self.agent_schema}.{self.model_name}"
 
+    def get_uc_vs_endpoint_name(self) -> str:
+        """Returns full UC vector search endpoint name (uses data catalog)."""
+        return f"{self.data_catalog}.{self.data_schema}.{self.vs_endpoint_name}"
+
     @classmethod
     def load_from_file(cls) -> Optional["UCConfig"]:
         """Load UCConfig from yaml file."""
@@ -77,6 +81,18 @@ class MCPServer(BaseModel):
     app_name: Optional[str] = None
 
 
+class CacheConfig(BaseModel):
+    """Configuration for agent caching."""
+
+    enabled: bool = Field(default=False, description="Enable caching for this agent")
+    similarity_threshold: float = Field(
+        default=0.8,
+        ge=0.0,
+        le=1.0,
+        description="Similarity threshold for cache hits (0.0-1.0)",
+    )
+
+
 class AgentConfig(BaseModel):
     """Model for agent configuration from YAML."""
 
@@ -86,6 +102,9 @@ class AgentConfig(BaseModel):
     system_prompt: str
     uc_functions: list[str] = Field(default_factory=list)
     mcp_servers: list[MCPServer] = Field(default_factory=list)
+    cache: Optional[CacheConfig] = Field(
+        default=None, description="Optional cache configuration"
+    )
     uc_config: UCConfig
 
     @classmethod

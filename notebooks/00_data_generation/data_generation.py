@@ -30,6 +30,7 @@ from telco_support_agent.data.generators.customers import CustomerGenerator
 from telco_support_agent.data.generators.knowledge_base import \
     KnowledgeGenerator
 from telco_support_agent.data.generators.products import ProductGenerator
+from telco_support_agent.data.generators.cache import CacheGenerator
 
 # COMMAND ----------
 
@@ -58,6 +59,9 @@ generate_config = {
     # Knowledge base data
     "kb_articles": False,
     "support_tickets": True,
+
+    # Cache data
+    "cache": True,
 
 }
 
@@ -398,3 +402,19 @@ GROUP BY category, status
 ORDER BY category, status
 """
 display(spark.sql(query))
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC ## Cache Data
+
+# COMMAND ----------
+
+if should_generate("cache"):
+    cache_gen = CacheGenerator(CONFIG)
+    cache_gen.create_cache_table(f"telco_customer_support_{env}.gold.agent_cache")
+else:
+    cache_df = load_existing_table("agent_cache")
+    print("Using existing cache data")
+
+display(cache_df)
